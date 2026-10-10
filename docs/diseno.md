@@ -2,7 +2,7 @@
 
 Juego 3D de sinónimos ("palabras gemelas") y antónimos ("palabras espejo") para 3.er grado de primaria (Perú, CNEB: "Lee diversos tipos de textos escritos en su lengua materna").
 
-Estado: **fase 1 lista para revisión** (historia, banco y plan aprobados).
+Estado: **fases 0 a 9 completas**: el juego entero está en `index.html` y pasó la verificación automática (sección 5).
 
 ---
 
@@ -272,7 +272,7 @@ Se guarda después de cada respuesta, para que recargar la página no pierda nad
 - **Rendimiento**: materiales `MeshToonMaterial`, 1 luz ambiental + 1 direccional, sin sombras, geometrías de bajo polígono, `pixelRatio` máx. 1.5 con bajada automática si los FPS caen de 40, render en pausa con la pestaña oculta.
 - **Sin parpadeos**: ningún destello más de 3 veces por segundo.
 - **Asteroides sin castigo por tiempo**: en planetas 1-2 se detienen y flotan; desde el 3 dan la vuelta y regresan.
-- **CSV**: UTF-8 con BOM; separador configurable (`;` por defecto, `,` opcional) porque Excel usa el de la configuración regional de Windows.
+- **CSV**: UTF-8 con BOM y fin de línea CRLF. Separador «Automático»: si el idioma del equipo usa coma decimal se usa `;`, si no `,` (en es-PE resulta `,`). El docente puede forzar `;` o `,` en «Aula y ajustes».
 - **Modo prueba** (`?debug=1`): saltar escenas y responder solo, para las pruebas automáticas.
 
 ### 4.7 Vercel
@@ -285,14 +285,14 @@ Se guarda después de cada respuesta, para que recargar la página no pierda nad
 |---|---|---|
 | 0 ✅ | Esqueleto: `index.html`, importmap, `vercel.json` | — |
 | 1 ✅ | `muestra.html`: retratos SVG con expresiones + cuadro de diálogo + voz | **Docente revisa** |
-| 2 | Motor 3D: espacio, nave, asteroides con palabras, rayo de voz, toque/clic | — |
-| 3 | Planeta 1 completo: preguntas, energía, escáner, cofre, jefe Copión | — |
-| 4 | Planetas 2-4, Corazón de la Nebulosa e historia completa | **Docente prueba** |
-| 5 | Estaciones: pausa activa, recompensas, personalización, reparar la nave | — |
-| 6 | Alumnos y guardado | — |
-| 7 | Panel docente: resultados, CSV, editor del banco, JSON, datos del aula | — |
-| 8 | Diploma, práctica libre, música y pulido | — |
-| 9 | Verificación final (abajo) | **Docente aprueba** |
+| 2 ✅ | Motor 3D: espacio, nave, asteroides con palabras, rayo de voz, toque/clic | — |
+| 3 ✅ | Planeta 1 completo: preguntas, energía, escáner, cofre, jefe Copión | — |
+| 4 ✅ | Planetas 2-4, Corazón de la Nebulosa e historia completa | **Docente prueba** |
+| 5 ✅ | Estaciones: pausa activa, recompensas, personalización, reparar la nave | — |
+| 6 ✅ | Alumnos y guardado | — |
+| 7 ✅ | Panel docente: resultados, CSV, editor del banco, JSON, datos del aula | — |
+| 8 ✅ | Diploma, práctica libre, música y pulido | — |
+| 9 ✅ | Verificación final (abajo) | **Docente aprueba** |
 
 ### 4.9 Verificación final
 - Recorrido automático de principio a fin con Playwright, en modo táctil (tablet) y con mouse (laptop).
@@ -305,7 +305,24 @@ Se guarda después de cada respuesta, para que recargar la página no pierda nad
 ### 4.10 Cómo correr las pruebas
 ```
 python3 -m http.server 8123          # en la raíz del repositorio
-node tests/muestra.mjs               # recorre la muestra con táctil y mouse; falla si hay errores en consola
-node tests/hoja-retratos.mjs         # genera tests/capturas/hoja-retratos.png con todas las expresiones
+node tests/banco.mjs                 # revisa que cada reactivo tenga una sola respuesta válida
+node tests/juego.mjs tactil          # partida completa con pantalla táctil (1280×800)
+node tests/juego.mjs mouse           # partida completa con mouse (1366×768)
+node tests/docente.mjs mouse         # panel docente: clave, CSV, importar/exportar, banco, ajustes, reinicio
+node tests/muestra.mjs               # página de muestra de personajes
+node tests/hoja-retratos.mjs         # hoja con todas las expresiones
 ```
-Requiere Playwright (`npm i -D playwright`).
+Requiere Playwright (`npm i -D playwright`). Las pruebas abren `index.html?debug&rapido`: `debug` marca las respuestas correctas para el robot de pruebas y `rapido` acorta animaciones y la pausa activa. Si el equipo no llega a jsDelivr, las pruebas sirven Three.js 0.160.0 desde `tests/vendor/three` (copia de npm, no se sube al repositorio).
+
+---
+
+## 5. Verificación final
+
+| Revisión | Resultado |
+|---|---|
+| Ningún reactivo ambiguo | `tests/banco.mjs`: 100 reactivos, ningún distractor es gemela/espejo válida según el banco; oraciones con una sola pista que deja una respuesta |
+| Progreso guardado y recuperado al recargar | `tests/juego.mjs` recarga la página a mitad de la misión y comprueba que el alumno sigue en el mismo paso |
+| CSV en Excel con tildes y ñ | BOM `EF BB BF`, CRLF, 28 columnas; abierto con LibreOffice con separador `;` y `,`: «María Ñahui», «Rocío Ñañez», «Señor de los Milagros» intactos |
+| Táctil y mouse | Partida completa y panel docente probados con toques (tablet) y con clics (laptop) |
+| Sin errores en consola | 0 errores y 0 avisos del juego en todas las pruebas (se ignoran solo los avisos del WebGL por software del contenedor de pruebas) |
+| Partida completa de principio a fin | Prólogo → 5 planetas con jefes → 4 estaciones → final → diploma, incluyendo errores a propósito, escáner, energía en cero y recarga |
