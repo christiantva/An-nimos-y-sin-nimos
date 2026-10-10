@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es-PE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Misión Palabra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root { --rosa:#f6c1cc; --rosa-claro:#fff0f3; --ciruela:#4a2635; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: #1b1640; color: #2b1420; font-family: 'Andika', system-ui, sans-serif; overflow: hidden; }
+  #lienzo { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  .tarjeta { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(560px, calc(100% - 32px));
+    background: var(--rosa-claro); border: 3px solid var(--ciruela); border-radius: 18px; padding: 28px;
+    box-shadow: inset 0 0 0 5px #f9d3dc, inset 0 0 0 7px var(--rosa); text-align: center; }
+  h1 { margin: 0 0 8px; font-size: clamp(30px, 5vw, 44px); }
+  p { font-size: 20px; margin: 8px 0 20px; }
+  a.boton { display: inline-block; padding: 14px 28px; font-size: 22px; font-weight: 700; color: inherit; text-decoration: none;
+    background: #fff; border: 3px solid var(--ciruela); border-radius: 16px; box-shadow: inset 0 0 0 4px var(--rosa), 0 6px 0 var(--ciruela); }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<canvas id="lienzo" aria-hidden="true"></canvas>
+<div class="tarjeta">
+  <h1>Misión Palabra</h1>
+  <p>Estamos construyendo el juego.<br>Mientras tanto, conoce a la tripulación.</p>
+  <a class="boton" href="muestra.html">Ver personajes ▶</a>
+</div>
+<script type="module">
+  // Fase 0: comprueba que Three.js carga desde el CDN con un planeta de fondo.
+  import * as THREE from 'three';
+  const lienzo = document.getElementById('lienzo');
+  const renderer = new THREE.WebGLRenderer({ canvas: lienzo, antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+  const escena = new THREE.Scene();
+  escena.background = new THREE.Color('#1b1640');
+  const camara = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+  camara.position.set(0, 0, 8);
+  escena.add(new THREE.HemisphereLight('#ffe0f0', '#3b2a6b', 1.2));
+  const sol = new THREE.DirectionalLight('#ffffff', 1.4);
+  sol.position.set(3, 4, 5);
+  escena.add(sol);
+  const planeta = new THREE.Mesh(new THREE.IcosahedronGeometry(1.6, 2), new THREE.MeshToonMaterial({ color: '#ff8fb8' }));
+  planeta.position.set(3.2, 1.4, -2);
+  escena.add(planeta);
+  const anillo = new THREE.Mesh(new THREE.TorusGeometry(2.4, 0.12, 8, 48), new THREE.MeshToonMaterial({ color: '#ffd23f' }));
+  anillo.rotation.x = 1.2;
+  planeta.add(anillo);
+  const puntos = new Float32Array(600 * 3);
+  for (let i = 0; i < puntos.length; i++) puntos[i] = (Math.random() - 0.5) * 40;
+  const estrellas = new THREE.BufferGeometry();
+  estrellas.setAttribute('position', new THREE.BufferAttribute(puntos, 3));
+  escena.add(new THREE.Points(estrellas, new THREE.PointsMaterial({ color: '#ffffff', size: 0.06 })));
+  function ajustar() {
+    renderer.setSize(innerWidth, innerHeight, false);
+    camara.aspect = innerWidth / innerHeight;
+    camara.updateProjectionMatrix();
+  }
+  addEventListener('resize', ajustar);
+  ajustar();
+  renderer.setAnimationLoop((t) => {
+    planeta.rotation.y = t / 4000;
+    renderer.render(escena, camara);
+  });
+</script>
+</body>
+</html>

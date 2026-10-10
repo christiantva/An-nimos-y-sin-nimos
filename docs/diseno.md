@@ -2,7 +2,7 @@
 
 Juego 3D de sinónimos ("palabras gemelas") y antónimos ("palabras espejo") para 3.er grado de primaria (Perú, CNEB: "Lee diversos tipos de textos escritos en su lengua materna").
 
-Estado: **en revisión** (historia aprobada, banco de palabras pendiente de aprobación). Aún no hay código.
+Estado: **fase 1 lista para revisión** (historia, banco y plan aprobados).
 
 ---
 
@@ -24,7 +24,8 @@ Estado: **en revisión** (historia aprobada, banco de palabras pendiente de apro
 | Datos del aula | Opcionales en el panel docente: IE, docente, grado, sección. Si están vacíos, no aparecen |
 | Al terminar | Se desbloquea "Práctica libre" (elegir cualquier planeta) |
 | Banco | Creado desde cero (no hay libro de referencia) |
-| Siguiente paso | Página de muestra de personajes y cuadro de diálogo antes del juego completo |
+| Resultados del salón | Cada equipo exporta un archivo de resultados; el docente los importa en su laptop y descarga **un solo CSV** del salón (USB, WhatsApp o Drive para moverlos) |
+| Siguiente paso | Revisión de la muestra de personajes (`/muestra`) antes de la fase 2 |
 
 ### Audio sin audífonos (aula con 25-30 equipos)
 - Voz a velocidad 0.9 y volumen moderado; la música baja automáticamente mientras habla la voz.
@@ -282,8 +283,8 @@ Se guarda después de cada respuesta, para que recargar la página no pierda nad
 ### 4.8 Fases
 | Fase | Entrega | Revisión |
 |---|---|---|
-| 0 | Esqueleto: `index.html`, importmap, `vercel.json` | — |
-| 1 | `muestra.html`: retratos SVG con expresiones + cuadro de diálogo + voz | **Docente revisa** |
+| 0 ✅ | Esqueleto: `index.html`, importmap, `vercel.json` | — |
+| 1 ✅ | `muestra.html`: retratos SVG con expresiones + cuadro de diálogo + voz | **Docente revisa** |
 | 2 | Motor 3D: espacio, nave, asteroides con palabras, rayo de voz, toque/clic | — |
 | 3 | Planeta 1 completo: preguntas, energía, escáner, cofre, jefe Copión | — |
 | 4 | Planetas 2-4, Corazón de la Nebulosa e historia completa | **Docente prueba** |
@@ -300,3 +301,11 @@ Se guarda después de cada respuesta, para que recargar la página no pierda nad
 - CSV: comprobar BOM, tildes y ñ, y abrirlo con LibreOffice como prueba de Excel.
 - Revisión del banco: script que verifica que ningún distractor sea a la vez respuesta de otra pregunta del mismo tipo con la misma palabra objetivo y que todas las opciones estén completas.
 - Prueba de rendimiento con la CPU ralentizada 4× (simulación de tablet de gama media).
+
+### 4.10 Cómo correr las pruebas
+```
+python3 -m http.server 8123          # en la raíz del repositorio
+node tests/muestra.mjs               # recorre la muestra con táctil y mouse; falla si hay errores en consola
+node tests/hoja-retratos.mjs         # genera tests/capturas/hoja-retratos.png con todas las expresiones
+```
+Requiere Playwright (`npm i -D playwright`).

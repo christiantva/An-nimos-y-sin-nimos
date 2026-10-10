@@ -1,0 +1,1224 @@
+<!doctype html>
+<html lang="es-PE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Misión Palabra · Muestra de personajes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --rosa: #f6c1cc;
+    --rosa-claro: #fff0f3;
+    --rosa-medio: #f9d3dc;
+    --ciruela: #4a2635;
+    --ciruela-suave: #7a3b52;
+    --texto: #2b1420;
+    --c: #3fb6d9;
+    --vn-alto: clamp(150px, 31vh, 250px);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    display: flex; flex-direction: column; height: 100dvh;
+    background: #2a2050; color: var(--texto);
+    font-family: 'Andika', system-ui, sans-serif;
+    overscroll-behavior: none;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* ---------- Barra superior (solo para la muestra) ---------- */
+  .barra-sup {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+    padding: 8px 16px; background: var(--rosa-claro); border-bottom: 3px solid var(--ciruela);
+  }
+  .barra-sup h1 { margin: 0; font-size: 19px; }
+  .pestanas { display: flex; gap: 6px; }
+  .pestanas button, .chip, .boton {
+    min-height: 44px; padding: 6px 16px; font-weight: 700; font-size: 17px;
+    background: #fff; border: 3px solid var(--ciruela); border-radius: 999px;
+  }
+  .pestanas button[aria-selected="true"], .chip[aria-pressed="true"] { background: var(--ciruela); color: #fff; }
+  .barra-sup label { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; }
+  .barra-sup input[type="text"] {
+    width: 140px; min-height: 40px; padding: 4px 10px; font: inherit; font-size: 17px;
+    border: 3px solid var(--ciruela); border-radius: 10px;
+  }
+  .barra-sup input[type="checkbox"] { width: 24px; height: 24px; accent-color: var(--ciruela); }
+  .estado-voz { font-size: 14px; color: var(--ciruela-suave); }
+
+  /* ---------- Escena ---------- */
+  #escena { position: relative; flex: 1; min-height: 300px; overflow: hidden; }
+  @media (max-height: 500px) {
+    .barra-sup { padding: 4px 12px; gap: 4px 10px; }
+    .barra-sup h1, .estado-voz { display: none; }
+    .hud { top: 20px; }
+    .hud .corazones svg { width: 26px; height: 26px; }
+  }
+  #escena[hidden], #galeria[hidden] { display: none; }
+  #cielo { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .marco-pantalla {
+    position: absolute; inset: 8px; pointer-events: none;
+    border: 8px solid var(--rosa); border-radius: 22px;
+    box-shadow: 0 0 0 3px var(--ciruela), inset 0 0 0 3px var(--ciruela);
+  }
+  .hud {
+    position: absolute; top: 26px; left: 30px; right: 30px;
+    display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none;
+  }
+  .caja {
+    background: var(--rosa-claro); border: 3px solid var(--ciruela); border-radius: 14px;
+    box-shadow: inset 0 0 0 3px var(--rosa);
+  }
+  .hud .caja { padding: 6px 12px; display: flex; align-items: center; gap: 4px; }
+  .hud .corazones svg { width: 34px; height: 34px; }
+  .galaxia { gap: 10px !important; font-weight: 700; font-size: 17px; }
+  .galaxia .barra { width: min(240px, 26vw); height: 22px; border: 3px solid var(--ciruela); border-radius: 6px; background: #fff; overflow: hidden; }
+  .galaxia .barra i { display: block; height: 100%; width: 62%; background: repeating-linear-gradient(-45deg, #ff9fb8 0 10px, #ffc2d1 10px 20px); }
+
+  /* ---------- Cuadro de novela visual ---------- */
+  .vn {
+    position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%);
+    width: min(1180px, calc(100% - 60px));
+    display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end;
+    transition: opacity .3s, transform .3s;
+  }
+  .vn.oculta { opacity: 0; transform: translate(-50%, 30px); pointer-events: none; }
+  .vn-marco { display: grid; grid-template-columns: var(--vn-alto) 1fr; gap: 12px; height: var(--vn-alto); cursor: pointer; }
+  .vn-retrato {
+    border: 5px solid var(--c); outline: 3px solid var(--ciruela); outline-offset: 0;
+    border-radius: 16px; overflow: hidden; background: #fff;
+  }
+  .vn-retrato svg { width: 100%; height: 100%; display: block; }
+  .vn-retrato.entra svg { animation: rebote .35s ease-out; }
+  @keyframes rebote { 0% { transform: translateY(8px) scale(.96); } 100% { transform: none; } }
+  .vn-cuerpo {
+    position: relative; padding: 32px 60px 18px 26px;
+    background: var(--rosa-claro);
+    background: color-mix(in srgb, var(--rosa-claro) 95%, transparent);
+    border: 3px solid var(--ciruela); border-radius: 16px;
+    box-shadow: inset 0 0 0 5px var(--rosa-medio), inset 0 0 0 8px var(--rosa);
+  }
+  .vn-nombre {
+    position: absolute; top: -21px; left: 18px;
+    padding: 2px 18px 2px 12px; font-weight: 700; font-size: clamp(17px, 1.6vw + 4px, 23px);
+    background: #fff; border: 3px solid var(--ciruela); border-left: 14px solid var(--c); border-radius: 999px;
+  }
+  .vn-texto { margin: 0; font-size: clamp(20px, 2vw + 6px, 30px); line-height: 1.35; font-weight: 700; }
+  .vn-texto .fantasma { visibility: hidden; }
+  .vn-sig { position: absolute; right: 22px; bottom: 14px; font-size: 26px; color: var(--ciruela-suave); opacity: 0; }
+  .vn-sig.si { opacity: 1; animation: empuje 1.6s ease-in-out infinite; }
+  @keyframes empuje { 50% { transform: translateX(6px); } }
+  .vn-botones { display: grid; gap: 8px; height: var(--vn-alto); align-content: space-between; }
+  .vn-botones button {
+    width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center;
+    background: #ffd6e0; border: 3px solid var(--ciruela); box-shadow: inset 0 0 0 3px #fff;
+  }
+  .vn-botones button:active { transform: scale(.92); }
+  .vn-botones svg { width: 26px; height: 26px; }
+  @media (max-height: 640px) { .vn-botones { grid-template-columns: 1fr 1fr; align-content: end; } }
+  @media (max-width: 720px) {
+    .vn { width: calc(100% - 32px); bottom: 20px; }
+    .vn-marco { grid-template-columns: calc(var(--vn-alto) * .7) 1fr; }
+    .vn-cuerpo { padding: 28px 40px 14px 16px; }
+    .vn-botones button { width: 46px; height: 46px; }
+  }
+  .vn-opciones {
+    position: absolute; bottom: calc(100% + 22px); left: 0; right: 0;
+    display: flex; justify-content: center; flex-wrap: wrap; gap: 18px;
+  }
+  .vn-opciones button {
+    min-height: 66px; min-width: 210px; padding: 10px 28px;
+    font-size: clamp(20px, 1.8vw + 6px, 28px); font-weight: 700;
+    background: #fff; border: 3px solid var(--ciruela); border-radius: 18px;
+    box-shadow: inset 0 0 0 4px var(--rosa), 0 6px 0 var(--ciruela);
+    animation: aparece .3s ease-out;
+  }
+  .vn-opciones button:active { transform: translateY(4px); box-shadow: inset 0 0 0 4px var(--rosa), 0 2px 0 var(--ciruela); }
+  @keyframes aparece { from { opacity: 0; transform: translateY(10px); } }
+
+  .aviso-oculto {
+    position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%);
+    padding: 10px 20px; font-weight: 700; font-size: 18px;
+  }
+
+  /* ---------- Paneles ---------- */
+  .cubre { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(27, 22, 64, .55); z-index: 5; padding: 16px; }
+  .cubre[hidden] { display: none; }
+  .tarjeta { width: min(620px, 100%); padding: 26px; text-align: center; box-shadow: inset 0 0 0 5px var(--rosa-medio), inset 0 0 0 8px var(--rosa); }
+  .tarjeta h2 { margin: 0 0 8px; font-size: clamp(26px, 4vw, 38px); }
+  .tarjeta p { font-size: 19px; margin: 8px 0 20px; }
+  .boton-grande {
+    min-height: 66px; padding: 10px 34px; font-size: 26px; font-weight: 700;
+    background: #fff; border: 3px solid var(--ciruela); border-radius: 18px;
+    box-shadow: inset 0 0 0 4px var(--rosa), 0 6px 0 var(--ciruela);
+  }
+  .historial { width: min(760px, 100%); max-height: 82%; display: flex; flex-direction: column; padding: 18px; }
+  .historial header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .historial h2 { margin: 0; font-size: 26px; }
+  .historial ol { list-style: none; margin: 0; padding: 0; overflow: auto; display: grid; gap: 10px; }
+  .historial li { display: grid; grid-template-columns: 56px 1fr; gap: 12px; align-items: center; font-size: 19px; }
+  .historial li svg { width: 56px; height: 56px; border-radius: 10px; border: 3px solid var(--ciruela); }
+  .historial b { display: block; font-size: 16px; color: var(--ciruela-suave); }
+
+  /* ---------- Galería ---------- */
+  #galeria { flex: 1; overflow: auto; padding: 18px 16px 40px; background: #fbe9ee; }
+  #galeria h2 { margin: 8px 4px 12px; font-size: 26px; }
+  .rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .ficha { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .ficha .foto { aspect-ratio: 1; border: 4px solid var(--c); outline: 3px solid var(--ciruela); border-radius: 14px; overflow: hidden; }
+  .ficha .foto svg { width: 100%; height: 100%; display: block; }
+  .ficha h3 { margin: 4px 0 0; font-size: 22px; display: flex; align-items: center; gap: 8px; }
+  .ficha h3::before { content: ""; width: 16px; height: 16px; border-radius: 50%; background: var(--c); border: 2px solid var(--ciruela); }
+  .ficha p { margin: 0; font-size: 16px; color: var(--ciruela-suave); min-height: 2.6em; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { min-height: 40px; padding: 4px 12px; font-size: 15px; }
+  .ficha.elegido { outline: 5px solid #ff8a3d; }
+  .avatares-exp { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 4px 14px; }
+</style>
+</head>
+<body>
+
+<!-- Definiciones compartidas por todos los retratos -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <filter id="trazo" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="7" result="ruido"/>
+      <feDisplacementMap in="SourceGraphic" in2="ruido" scale="1.8" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="brillo" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="2.2" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <radialGradient id="gNebu" gradientUnits="userSpaceOnUse" cx="86" cy="76" r="130">
+      <stop offset="0" stop-color="#ffe0f3"/><stop offset=".45" stop-color="#e2a8ff"/><stop offset="1" stop-color="#8fa8ff"/>
+    </radialGradient>
+    <radialGradient id="gNebuGris" gradientUnits="userSpaceOnUse" cx="86" cy="76" r="130">
+      <stop offset="0" stop-color="#e4e2ea"/><stop offset=".5" stop-color="#bdb8c9"/><stop offset="1" stop-color="#8f8a9c"/>
+    </radialGradient>
+    <linearGradient id="gEspejo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f6fcff"/><stop offset=".5" stop-color="#b9d8f4"/><stop offset="1" stop-color="#eef7ff"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<header class="barra-sup">
+  <h1>Misión Palabra · Muestra</h1>
+  <div class="pestanas" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="escena">Escena</button>
+    <button role="tab" aria-selected="false" data-tab="galeria">Personajes</button>
+  </div>
+  <label>Cadete <input type="text" id="nombre" value="Ana" maxlength="16" autocomplete="off"></label>
+  <label><input type="checkbox" id="vozAuto" checked> Voz automática</label>
+  <span class="estado-voz" id="estadoVoz">Buscando voz…</span>
+</header>
+
+<main id="escena">
+  <canvas id="cielo" aria-hidden="true"></canvas>
+  <div class="marco-pantalla"></div>
+
+  <div class="hud">
+    <div class="caja corazones" aria-label="Energía: 4 de 5" id="corazones"></div>
+    <div class="caja galaxia">Galaxia <div class="barra"><i></i></div></div>
+  </div>
+
+  <section class="vn" id="vn" aria-label="Diálogo">
+    <div class="vn-opciones" id="vnOpciones"></div>
+    <div class="vn-marco" id="vnMarco">
+      <div class="vn-retrato" id="vnRetrato"></div>
+      <div class="vn-cuerpo">
+        <div class="vn-nombre" id="vnNombre"></div>
+        <p class="vn-texto" id="vnTexto" aria-hidden="true"></p>
+        <p class="sr-only" id="vnLector" aria-live="polite"></p>
+        <span class="vn-sig" id="vnSig" aria-hidden="true">▶▶</span>
+      </div>
+    </div>
+    <div class="vn-botones">
+      <button data-acc="voz" aria-label="Escuchar otra vez" title="Escuchar otra vez">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#4a2635" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="#ff8fab"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+      </button>
+      <button data-acc="saltar" aria-label="Saltar escena" title="Saltar escena">
+        <svg viewBox="0 0 24 24" fill="#ff8fab" stroke="#4a2635" stroke-width="2.2" stroke-linejoin="round"><path d="M3 5l8 7-8 7z"/><path d="M12 5l8 7-8 7z"/></svg>
+      </button>
+      <button data-acc="historial" aria-label="Ver historial" title="Ver historial">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#4a2635" stroke-width="2.4" stroke-linecap="round"><rect x="4" y="3" width="16" height="18" rx="3" fill="#ff8fab"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+      </button>
+      <button data-acc="ocultar" aria-label="Ocultar diálogo" title="Ocultar diálogo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#4a2635" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <div class="caja aviso-oculto" id="avisoOculto" hidden>Toca la pantalla para ver el diálogo</div>
+
+  <div class="cubre" id="inicio">
+    <div class="caja tarjeta">
+      <h2>Muestra de personajes</h2>
+      <p>Así se verán y sonarán los diálogos del juego.<br>El espacio en 3D llega en la fase 2.</p>
+      <button class="boton-grande" id="btnEmpezar">▶ Empezar</button>
+    </div>
+  </div>
+
+  <div class="cubre" id="fin" hidden>
+    <div class="caja tarjeta">
+      <h2>¡Fin de la muestra!</h2>
+      <p>Revisa también la pestaña «Personajes» para ver todas las expresiones.</p>
+      <button class="boton-grande" id="btnOtraVez">⟲ Ver otra vez</button>
+    </div>
+  </div>
+
+  <div class="cubre" id="panelHistorial" hidden>
+    <div class="caja historial" role="dialog" aria-label="Historial">
+      <header><h2>Historial</h2><button class="boton" id="cerrarHistorial">Cerrar ✕</button></header>
+      <ol id="listaHistorial"></ol>
+    </div>
+  </div>
+</main>
+
+<section id="galeria" hidden>
+  <h2>Personajes</h2>
+  <div class="rejilla" id="rejillaPersonajes"></div>
+  <h2>Avatares del cadete</h2>
+  <div class="avatares-exp" id="expAvatares"></div>
+  <div class="rejilla" id="rejillaAvatares"></div>
+</section>
+
+<script>
+'use strict';
+/* =====================================================================
+   1. RETRATOS SVG
+   Cada retrato se dibuja por capas en un lienzo de 200 × 200 y cambia
+   de expresión cambiando solo ojos, cejas y boca.
+   ===================================================================== */
+const LINEA = '#4a2635';
+let _uid = 0;
+const nid = () => 'k' + (++_uid);
+const f = (n) => Math.round(n * 10) / 10;
+const T = (w = 2.5, c = LINEA) => `stroke="${c}" stroke-width="${w}"`;
+
+function lienzo(fondo, contenido) {
+  return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img">`
+    + `<rect width="200" height="200" fill="${fondo}"/>`
+    + `<circle cx="100" cy="96" r="80" fill="#fff" opacity=".4"/>`
+    + `<g filter="url(#trazo)" stroke-linejoin="round">${contenido}</g></svg>`;
+}
+
+function ojo(cx, cy, e, lado, o = {}) {
+  const s = o.s ?? 1, L = o.linea ?? LINEA;
+  const X = (d) => f(cx + d * s), Y = (d) => f(cy + d * s), W = (v) => f(v * s);
+  if (e === 'feliz') {
+    return `<path d="M${X(-11)} ${Y(4)} Q${X(0)} ${Y(-12)} ${X(11)} ${Y(4)}" fill="none" stroke="${L}" stroke-width="${W(4.5)}" stroke-linecap="round"/>`;
+  }
+  if (e === 'hipo' || e === 'achis') {
+    const k = -lado;
+    return `<path d="M${X(-8 * k)} ${Y(-7)} L${X(7 * k)} ${Y(0)} L${X(-8 * k)} ${Y(7)}" fill="none" stroke="${L}" stroke-width="${W(4.5)}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  let rx = 11, ry = 13, irx = 8, iry = 9.5, dx = 0, dy = 1.5;
+  if (e === 'sorprendido') { rx = 12.5; ry = 14.5; irx = 5.2; iry = 6.2; dy = 0; }
+  if (e === 'pensativo') { dx = 3; dy = -3; }
+  if (e === 'triste') { dy = 3; }
+  const parpado = (e === 'pensativo' || e === 'presumido') && o.piel;
+  const id = nid();
+  const ix = cx + dx * s, iy = cy + dy * s;
+  let r = `<clipPath id="${id}"><ellipse cx="${f(cx)}" cy="${f(cy)}" rx="${W(rx)}" ry="${W(ry)}"/></clipPath>`;
+  r += `<ellipse cx="${f(cx)}" cy="${f(cy)}" rx="${W(rx)}" ry="${W(ry)}" fill="${o.blanco ?? '#fff'}"/>`;
+  r += `<g clip-path="url(#${id})">`;
+  r += `<ellipse cx="${f(ix)}" cy="${f(iy)}" rx="${W(irx)}" ry="${W(iry)}" fill="${o.iris ?? '#6b3b2a'}"/>`;
+  r += `<ellipse cx="${f(ix)}" cy="${f(iy + s)}" rx="${W(irx * .5)}" ry="${W(iry * .55)}" fill="#1d0f16" opacity=".85"/>`;
+  r += `<circle cx="${f(ix - 3 * s)}" cy="${f(iy - 4 * s)}" r="${W(3.2)}" fill="#fff"/>`;
+  r += `<circle cx="${f(ix + 3 * s)}" cy="${f(iy + 3.5 * s)}" r="${W(1.6)}" fill="#fff" opacity=".9"/>`;
+  if (parpado) r += `<rect x="${X(-rx - 2)}" y="${Y(-ry - 2)}" width="${W(2 * rx + 4)}" height="${W(ry * .95 + 2)}" fill="${o.piel}"/>`;
+  r += `</g><ellipse cx="${f(cx)}" cy="${f(cy)}" rx="${W(rx)}" ry="${W(ry)}" fill="none" stroke="${L}" stroke-width="${W(2)}"/>`;
+  let a, c, b;
+  if (parpado) { const y = -ry * .05; a = [-rx - 1.5, y]; c = [0, y - 4]; b = [rx + 1.5, y]; }
+  else if (e === 'triste') { a = [lado * (rx + 1.5), 1]; c = [0, -ry - 6]; b = [-lado * (rx + 1.5), -5]; }
+  else { a = [-rx - 1.5, -1]; c = [0, -ry - 7]; b = [rx + 1.5, -2]; }
+  r += `<path d="M${X(a[0])} ${Y(a[1])} Q${X(c[0])} ${Y(c[1])} ${X(b[0])} ${Y(b[1])}" fill="none" stroke="${L}" stroke-width="${W(4)}" stroke-linecap="round"/>`;
+  if (!parpado) {
+    const ox = lado * (rx + 1);
+    r += `<path d="M${X(ox)} ${Y(e === 'triste' ? 1 : -2)} l${W(lado * 4)} ${W(-4)}" stroke="${L}" stroke-width="${W(3)}" stroke-linecap="round"/>`;
+  }
+  if (e === 'triste' && lado === 1) {
+    r += `<path d="M${X(rx - 3)} ${Y(ry + 1)} c${W(-3)} ${W(4)} ${W(-4)} ${W(7)} 0 ${W(9)} c${W(4)} ${W(-2)} ${W(3)} ${W(-5)} 0 ${W(-9)} Z" fill="#9fd8ff" stroke="${L}" stroke-width="${W(1.2)}"/>`;
+  }
+  return r;
+}
+
+function ceja(cx, cy, e, lado, o = {}) {
+  const s = o.s ?? 1, c = o.color ?? LINEA, g = o.grosor ?? 4;
+  const ext = lado * 10, int = -lado * 10;
+  let ye = 2, yi = 2, ym = -4, sh = 0;
+  switch (e) {
+    case 'feliz': sh = -4; break;
+    case 'sorprendido': sh = -8; ym = -10; break;
+    case 'pensativo': if (lado === -1) { sh = 1; ym = 0; ye = 1; yi = 1; } else { sh = -5; ye = 0; yi = 2; ym = -8; } break;
+    case 'triste': ye = 3; yi = -6; ym = -3; sh = -1; break;
+    case 'presumido': ye = -3; yi = 5; ym = -2; break;
+    case 'hipo': case 'achis': ye = 2; yi = -3; ym = -4; sh = -2; break;
+  }
+  const P = (x, y) => `${f(cx + x * s)} ${f(cy + (y + sh) * s)}`;
+  const d = `M${P(ext, ye)} Q${P(0, ym)} ${P(int, yi)}`;
+  let r = '';
+  if (o.borde) r += `<path d="${d}" fill="none" stroke="${o.borde}" stroke-width="${f((g + 3) * s)}" stroke-linecap="round"/>`;
+  return r + `<path d="${d}" fill="none" stroke="${c}" stroke-width="${f(g * s)}" stroke-linecap="round"/>`;
+}
+
+function boca(mx, my, e, o = {}) {
+  const s = o.s ?? 1, L = o.linea ?? LINEA, int = o.interior ?? '#8c2f45', len = o.lengua ?? '#ff8fa3';
+  const P = (x, y) => `${f(mx + x * s)} ${f(my + y * s)}`, W = (v) => f(v * s);
+  const trazo = (d, w = 3) => `<path d="${d}" fill="none" stroke="${L}" stroke-width="${W(w)}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  switch (e) {
+    case 'feliz':
+      return `<path d="M${P(-11, -2)} Q${P(0, 17)} ${P(11, -2)} Z" fill="${int}" stroke="${L}" stroke-width="${W(2.5)}"/>`
+        + `<ellipse cx="${f(mx + s)}" cy="${f(my + 5.5 * s)}" rx="${W(5)}" ry="${W(2.6)}" fill="${len}"/>`;
+    case 'sorprendido':
+      return `<ellipse cx="${f(mx)}" cy="${f(my + 2 * s)}" rx="${W(5.5)}" ry="${W(7)}" fill="${int}" stroke="${L}" stroke-width="${W(2.5)}"/>`;
+    case 'pensativo': return trazo(`M${P(-5, 2)} Q${P(1, -1)} ${P(8, 1)}`);
+    case 'triste': return trazo(`M${P(-8, 4)} Q${P(0, -4)} ${P(8, 4)}`);
+    case 'confundido': return trazo(`M${P(-10, 1)} L${P(-5, -3)} L${P(0, 2)} L${P(5, -3)} L${P(10, 1)}`, 2.6);
+    case 'hipo':
+      return `<ellipse cx="${f(mx)}" cy="${f(my + s)}" rx="${W(3.5)}" ry="${W(4.2)}" fill="${int}" stroke="${L}" stroke-width="${W(2.2)}"/>`;
+    case 'achis':
+      return `<ellipse cx="${f(mx)}" cy="${f(my + 3 * s)}" rx="${W(12)}" ry="${W(9)}" fill="${int}" stroke="${L}" stroke-width="${W(2.5)}"/>`;
+    case 'presumido': return trazo(`M${P(-8, 1)} Q${P(2, 6)} ${P(10, -4)}`);
+    default: return trazo(`M${P(-7, 0)} Q${P(0, 6)} ${P(7, 0)}`);
+  }
+}
+
+function mejillas(lx, rx, y, o = {}) {
+  const c = o.color ?? '#ff8fab', op = o.op ?? .5;
+  return [lx, rx].map((x) =>
+    `<ellipse cx="${x}" cy="${y}" rx="9" ry="5" fill="${c}" opacity="${op}"/>`
+    + `<path d="M${x - 5} ${y + 2} l3 -4 M${x - 1} ${y + 2} l3 -4 M${x + 3} ${y + 2} l3 -4" stroke="#e45b7f" stroke-width="1.3" stroke-linecap="round" opacity=".7"/>`
+  ).join('');
+}
+
+// Ojos, cejas, mejillas y boca en un solo paso.
+function rostro(g, e, o = {}) {
+  const ex = (e === 'normal' && o.base) ? o.base : e;
+  const eo = { s: o.s, iris: o.iris, piel: o.piel, linea: o.lineaOjo, blanco: o.blanco };
+  return (o.sinMejillas ? '' : mejillas(g.ex1 - 4, g.ex2 + 4, g.mejY, o.mej))
+    + ojo(g.ex1, g.ey, ex, -1, eo) + ojo(g.ex2, g.ey, ex, 1, eo)
+    + ceja(g.ex1, g.cy, ex, -1, o.ceja) + ceja(g.ex2, g.cy, ex, 1, o.ceja)
+    + (o.sinBoca ? '' : boca(g.mx ?? 100, g.my, ex, o.boca));
+}
+
+function corazon(cx, cy, r) {
+  return `M${cx} ${f(cy + r * .9)} C${f(cx - r * 1.6)} ${f(cy - r * .2)} ${f(cx - r * .9)} ${f(cy - r * 1.3)} ${cx} ${f(cy - r * .45)}`
+    + ` C${f(cx + r * .9)} ${f(cy - r * 1.3)} ${f(cx + r * 1.6)} ${f(cy - r * .2)} ${cx} ${f(cy + r * .9)} Z`;
+}
+function estrella(cx, cy, r) {
+  let d = '';
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .45 : r;
+    d += (i ? 'L' : 'M') + f(cx + rr * Math.cos(a)) + ' ' + f(cy + rr * Math.sin(a));
+  }
+  return d + 'Z';
+}
+function destello(x, y, r, c) {
+  return `<path d="M${x} ${y - r} Q${x} ${y} ${x + r} ${y} Q${x} ${y} ${x} ${y + r} Q${x} ${y} ${x - r} ${y} Q${x} ${y} ${x} ${y - r} Z" fill="${c}"/>`;
+}
+function flor(x, y, c, r = 5) {
+  let s = '';
+  for (let i = 0; i < 5; i++) {
+    const a = -Math.PI / 2 + i * 2 * Math.PI / 5;
+    s += `<circle cx="${f(x + r * 1.1 * Math.cos(a))}" cy="${f(y + r * 1.1 * Math.sin(a))}" r="${r}" fill="${c}" ${T(1.5)}/>`;
+  }
+  return s + `<circle cx="${x}" cy="${y}" r="${f(r * .8)}" fill="#ffd23f" ${T(1.5)}/>`;
+}
+
+// Chullo andino: gorro con orejeras, franja con rombos y pompón.
+function chullo(x0, x1, yTop, yBase, col = {}) {
+  const b = col.base ?? '#d6336c', fr = col.franja ?? '#ffd23f', ac = col.acento ?? '#2ec4b6';
+  const cx = (x0 + x1) / 2, w = x1 - x0;
+  let s = '';
+  s += `<path d="M${x0 + 2} ${yBase + 44} L${x0 + 2} ${yBase + 60}" stroke="${fr}" stroke-width="3"/><circle cx="${x0 + 2}" cy="${yBase + 62}" r="4.5" fill="${ac}" ${T(1.6)}/>`;
+  s += `<path d="M${x1 - 2} ${yBase + 44} L${x1 - 2} ${yBase + 60}" stroke="${fr}" stroke-width="3"/><circle cx="${x1 - 2}" cy="${yBase + 62}" r="4.5" fill="${ac}" ${T(1.6)}/>`;
+  s += `<path d="M${x0 + 2} ${yBase - 6} L${x0 - 8} ${yBase} Q${x0 - 10} ${yBase + 28} ${x0 + 2} ${yBase + 44} L${x0 + 12} ${yBase + 4} Z" fill="${b}" ${T(2.2)}/>`;
+  s += `<path d="M${x1 - 2} ${yBase - 6} L${x1 + 8} ${yBase} Q${x1 + 10} ${yBase + 28} ${x1 - 2} ${yBase + 44} L${x1 - 12} ${yBase + 4} Z" fill="${b}" ${T(2.2)}/>`;
+  s += `<path d="M${x0} ${yBase} Q${x0 - 2} ${yTop} ${cx} ${yTop - 2} Q${x1 + 2} ${yTop} ${x1} ${yBase} Z" fill="${b}" ${T()}/>`;
+  s += `<path d="M${x0 + 1} ${yBase - 14} Q${cx} ${yBase - 26} ${x1 - 1} ${yBase - 14} L${x1} ${yBase} Q${cx} ${yBase - 12} ${x0} ${yBase} Z" fill="${fr}" ${T(2)}/>`;
+  for (let i = 1; i <= 5; i++) {
+    const x = x0 + w * i / 6, t = (x - cx) / (w / 2), y = yBase - 9 - 6 * (1 - t * t);
+    s += `<rect x="${f(x - 3.5)}" y="${f(y - 3.5)}" width="7" height="7" transform="rotate(45 ${f(x)} ${f(y)})" fill="${ac}"/>`;
+  }
+  for (let i = 0; i < 4; i++) {
+    const x = x0 + w * (i + 1.5) / 6, t = (x - cx) / (w / 2), y = yBase - 32 - 8 * (1 - t * t);
+    s += `<circle cx="${f(x)}" cy="${f(y)}" r="2.6" fill="#fff" opacity=".85"/>`;
+  }
+  return s + `<circle cx="${cx}" cy="${yTop - 6}" r="10" fill="${fr}" ${T()}/>`;
+}
+
+/* ---------- Pelo ---------- */
+const PELO = {
+  gorro: (c) => `<ellipse cx="100" cy="94" rx="52" ry="50" fill="${c}" ${T()}/>`,
+  largo: (c, y = 196) => `<path d="M50 100 Q38 160 34 ${y} L166 ${y} Q162 160 150 100 Q152 42 100 42 Q48 42 50 100 Z" fill="${c}" ${T()}/>`,
+  flequillo: (c) => `<path d="M54 104 Q50 46 100 44 Q150 46 146 104 L140 86 L132 94 L124 76 L112 88 L100 72 L88 88 L76 76 L68 94 L60 86 Z" fill="${c}" ${T()}/>`,
+  lado: (c) => `<path d="M54 104 Q50 46 100 42 Q150 44 147 100 Q140 70 114 62 Q92 78 70 80 Q58 88 54 104 Z" fill="${c}" ${T()}/>`,
+  partido: (c) => `<path d="M54 110 Q52 46 100 44 Q148 46 146 110 Q140 72 104 60 L100 66 L96 60 Q60 72 54 110 Z" fill="${c}" ${T()}/>`,
+  remolino: (c) => `<path d="M98 46 q4 -16 18 -14 q-10 4 -12 16 Z" fill="${c}" ${T(2)}/>`,
+  rizos(c, atras) {
+    const pts = [];
+    if (atras) {
+      for (let a = -235; a <= 55; a += 24) { const r = a * Math.PI / 180; pts.push([100 + 60 * Math.cos(r), 100 + 56 * Math.sin(r)]); }
+    } else {
+      for (let a = -200; a <= 20; a += 22) { const r = a * Math.PI / 180; pts.push([100 + 54 * Math.cos(r), 86 + 46 * Math.sin(r)]); }
+      pts.push([76, 66], [100, 58], [124, 66]);
+    }
+    const R = atras ? 17 : 14;
+    return pts.map(([x, y]) => `<circle cx="${f(x)}" cy="${f(y)}" r="${R}" fill="none" stroke="${LINEA}" stroke-width="5"/>`).join('')
+      + pts.map(([x, y]) => `<circle cx="${f(x)}" cy="${f(y)}" r="${R}" fill="${c}"/>`).join('');
+  },
+  trenzas: (c) => [52, 148].map((x) => {
+    let s = '';
+    for (let i = 0; i < 4; i++) s += `<ellipse cx="${x}" cy="${126 + i * 14}" rx="${f(9 - i * .6)}" ry="8.5" fill="${c}" ${T(2.2)}/>`;
+    return s + `<rect x="${x - 7}" y="176" width="14" height="6" rx="3" fill="#ff6b8b" ${T(1.8)}/><path d="M${x - 5} 182 L${x} 194 L${x + 5} 182 Z" fill="${c}" ${T(1.8)}/>`;
+  }).join(''),
+  coletas: (c) => [[44, 38], [156, 162]].map(([x, xh]) =>
+    `<ellipse cx="${xh}" cy="132" rx="11" ry="22" fill="${c}" ${T()}/><circle cx="${x}" cy="100" r="17" fill="${c}" ${T()}/>`).join(''),
+  cola: (c) => `<ellipse cx="152" cy="74" rx="16" ry="34" transform="rotate(35 152 74)" fill="${c}" ${T()}/><circle cx="140" cy="58" r="6" fill="#ffd23f" ${T(1.8)}/>`,
+  asoma: (c) => `<path d="M58 88 L64 100 L72 90 L80 98 L90 90 L100 97 L110 90 L120 98 L128 90 L136 100 L142 88 Z" fill="${c}" ${T(2)}/>`,
+};
+
+/* ---------- Ropa ---------- */
+const HOMBROS = 'M26 200 Q30 168 72 162 L128 162 Q170 168 174 200 Z';
+const ROPA = {
+  traje: () => `<path d="${HOMBROS}" fill="#f4f6fb" ${T()}/>`
+    + `<path d="M76 162 Q100 186 124 162 L130 163 Q100 196 70 163 Z" fill="#ff8a3d" ${T(2)}/>`
+    + `<circle cx="142" cy="186" r="9" fill="#4aa3df" ${T(2)}/><path d="${estrella(142, 186, 6)}" fill="#fff"/>`,
+  killa: () => `<path d="${HOMBROS}" fill="#6b4fa0" ${T()}/>`
+    + `<path d="M84 162 L100 182 L116 162 Z" fill="#fff" ${T(2)}/>`
+    + `<rect x="40" y="170" width="22" height="7" rx="3" fill="#ffd23f" ${T(1.8)} transform="rotate(-18 51 173)"/>`
+    + `<rect x="138" y="170" width="22" height="7" rx="3" fill="#ffd23f" ${T(1.8)} transform="rotate(18 149 173)"/>`
+    + `<circle cx="140" cy="186" r="9" fill="#ffd23f"/><circle cx="144" cy="183" r="8" fill="#6b4fa0"/>`,
+  rirpu: () => `<path d="${HOMBROS}" fill="#5b8fd6" ${T()}/>`
+    + `<path d="M64 166 Q100 146 136 166 L134 176 Q100 158 66 176 Z" fill="#e4ebf7" ${T(2)}/>`
+    + `<circle cx="100" cy="186" r="7" fill="url(#gEspejo)" stroke="#e9c75f" stroke-width="3"/>`,
+  hojas: (ropa, hoja) => `<path d="${HOMBROS}" fill="${ropa}" ${T()}/>`
+    + `<ellipse cx="88" cy="168" rx="12" ry="6" transform="rotate(25 88 168)" fill="${hoja}" ${T(1.8)}/>`
+    + `<ellipse cx="112" cy="168" rx="12" ry="6" transform="rotate(-25 112 168)" fill="${hoja}" ${T(1.8)}/>`,
+};
+
+function humano(p, e) {
+  const piel = p.piel;
+  return lienzo(p.fondo, `
+    ${p.atras ? p.atras() : ''}
+    <path d="M87 146 L87 172 L113 172 L113 146 Z" fill="${piel}" ${T()}/>
+    ${p.ropa()}
+    <ellipse cx="56" cy="112" rx="8" ry="11" fill="${piel}" ${T()}/>
+    <ellipse cx="144" cy="112" rx="8" ry="11" fill="${piel}" ${T()}/>
+    <path d="M56 98 Q55 150 100 160 Q145 150 144 98 Q144 52 100 52 Q56 52 56 98 Z" fill="${piel}" ${T()}/>
+    <path d="M100 124 q3 4 -1 6" fill="none" stroke="${LINEA}" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+    ${p.frente ? p.frente() : ''}
+    ${rostro({ ex1: 80, ex2: 120, ey: 112, cy: 93, my: 142, mejY: 130 }, e,
+      { s: p.s ?? 1, iris: p.iris, piel, ceja: { color: p.ceja ?? LINEA, grosor: p.grosorCeja ?? 3.6 } })}
+    ${p.extra ? p.extra() : ''}`);
+}
+
+/* ---------- Personajes humanos ---------- */
+function killa(e) {
+  const c = '#2b1a1f';
+  return humano({
+    fondo: '#ece4fb', piel: '#c98c62', iris: '#4a2b1a', s: .92, grosorCeja: 4.2,
+    atras: () => `<circle cx="100" cy="40" r="17" fill="${c}" ${T()}/>` + PELO.gorro(c),
+    frente: () => PELO.lado(c),
+    ropa: ROPA.killa,
+    extra: () => `<path d="M50 112 Q46 32 100 32 Q154 32 150 112" fill="none" stroke="#3a3350" stroke-width="5"/>`
+      + `<rect x="42" y="100" width="14" height="24" rx="6" fill="#3a3350"/>`
+      + `<path d="M49 122 Q54 148 82 148" fill="none" stroke="#3a3350" stroke-width="3.5" stroke-linecap="round"/>`
+      + `<circle cx="84" cy="148" r="4.5" fill="#ff6b8b" ${T(1.5)}/>`,
+  }, e);
+}
+function tika(e) {
+  const c = '#3b2416';
+  return humano({
+    fondo: '#ffe1ee', piel: '#d9a074', iris: '#5a3a1f',
+    atras: () => PELO.coletas(c) + PELO.gorro(c),
+    frente: () => PELO.flequillo(c),
+    ropa: () => ROPA.hojas('#ff9cc2', '#57c27e'),
+    extra: () => flor(42, 86, '#ff7eb3') + flor(158, 86, '#ff7eb3'),
+  }, e);
+}
+function taka(e) {
+  const c = '#3b2416';
+  return humano({
+    fondo: '#dff5e6', piel: '#d9a074', iris: '#5a3a1f',
+    atras: () => PELO.gorro(c),
+    frente: () => PELO.flequillo(c) + PELO.remolino(c),
+    ropa: () => ROPA.hojas('#6ccf8e', '#ff9cc2'),
+    extra: () => flor(148, 84, '#ff7eb3', 4.5),
+  }, e);
+}
+function rirpu(e) {
+  const c = '#cfc6f2';
+  return humano({
+    fondo: '#e2edff', piel: '#b07650', iris: '#3d6fb5', ceja: '#8f84c4',
+    atras: () => PELO.largo(c),
+    frente: () => PELO.partido(c),
+    ropa: ROPA.rirpu,
+    extra: () => `<path d="M58 70 Q100 54 142 70 L140 80 Q100 66 60 80 Z" fill="#e9c75f" ${T(2.2)}/>`
+      + `<ellipse cx="100" cy="46" rx="13" ry="17" fill="url(#gEspejo)" stroke="#e9c75f" stroke-width="4"/>`
+      + `<path d="M93 40 L99 34" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>`
+      + `<circle cx="74" cy="70" r="3.5" fill="#9fd8ff" ${T(1.2)}/><circle cx="126" cy="70" r="3.5" fill="#9fd8ff" ${T(1.2)}/>`,
+  }, e);
+}
+
+const AVATARES = [
+  { piel: '#f3cfa8', pelo: '#3a2418', iris: '#5a3a1f', estilo: 'corto' },
+  { piel: '#d49a6a', pelo: '#1e1414', iris: '#3b2414', estilo: 'trenzas' },
+  { piel: '#8d5a3b', pelo: '#1a1010', iris: '#2e1a10', estilo: 'rizado' },
+  { piel: '#e3ac80', pelo: '#5b3420', iris: '#6b4a2a', estilo: 'cola' },
+  { piel: '#b8794f', pelo: '#241615', iris: '#3a2416', estilo: 'chullo' },
+  { piel: '#6e4630', pelo: '#120c0c', iris: '#2a1810', estilo: 'lacio' },
+];
+function cadete(i, e) {
+  const a = AVATARES[i % AVATARES.length], c = a.pelo;
+  const estilos = {
+    corto: { atras: () => PELO.gorro(c), frente: () => PELO.flequillo(c) + PELO.remolino(c) },
+    trenzas: { atras: () => PELO.gorro(c), frente: () => PELO.partido(c) + PELO.trenzas(c) },
+    rizado: { atras: () => PELO.rizos(c, true), frente: () => PELO.rizos(c) },
+    cola: { atras: () => PELO.cola(c) + PELO.gorro(c), frente: () => PELO.flequillo(c) },
+    chullo: { atras: () => PELO.gorro(c), frente: () => PELO.asoma(c) + chullo(50, 150, 30, 88) },
+    lacio: { atras: () => PELO.largo(c, 176), frente: () => PELO.partido(c) },
+  };
+  return humano({ fondo: '#ffe6d3', piel: a.piel, iris: a.iris, ropa: ROPA.traje, ...estilos[a.estilo] }, e);
+}
+
+/* ---------- Personajes no humanos ---------- */
+function robi(e, o = {}) {
+  const C = '#7ff6ff';
+  const st = `fill="none" stroke="${C}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"`;
+  const pill = (x, y = 92, h = 22) => `<rect x="${x - 6}" y="${y - h / 2}" width="12" height="${h}" rx="6" fill="${C}"/>`;
+  let ojos, bo, extra = '';
+  switch (e) {
+    case 'feliz':
+      ojos = [80, 120].map((x) => `<path d="M${x - 10} 96 Q${x} 80 ${x + 10} 96" ${st}/>`).join('');
+      bo = `<path d="M86 112 Q100 128 114 112" ${st}/>`; break;
+    case 'sorprendido':
+      ojos = [80, 120].map((x) => `<circle cx="${x}" cy="92" r="10" ${st}/><circle cx="${x}" cy="92" r="3.5" fill="${C}"/>`).join('');
+      bo = `<circle cx="100" cy="118" r="5" ${st}/>`; break;
+    case 'pensativo':
+      ojos = pill(80) + `<path d="M110 93 L130 93" ${st}/>`;
+      bo = `<path d="M90 118 q5 -5 10 0 t10 0" ${st}/>`;
+      extra = `<circle cx="134" cy="74" r="2.5" fill="${C}"/><circle cx="140" cy="68" r="2" fill="${C}" opacity=".7"/>`; break;
+    case 'triste':
+      ojos = pill(80, 95, 14) + pill(120, 95, 14) + `<path d="M70 80 L88 74" ${st}/><path d="M112 74 L130 80" ${st}/>`;
+      bo = `<path d="M88 122 Q100 112 112 122" ${st}/>`; break;
+    case 'confundido':
+      ojos = `<path d="M78 92 a2 2 0 1 1 4 0 a5 5 0 1 1 -9 0 a8 8 0 1 1 15 0" ${st} stroke-width="3.5"/>`
+        + `<path d="M113 85 L127 99 M127 85 L113 99" ${st}/>`;
+      bo = `<path d="M84 118 L90 114 L96 120 L102 114 L108 120 L114 116" ${st} stroke-width="3.5"/>`;
+      extra = `<rect x="56" y="104" width="88" height="3" fill="${C}" opacity=".3"/><rect x="62" y="74" width="60" height="2" fill="${C}" opacity=".25"/>`; break;
+    default:
+      ojos = pill(80) + pill(120);
+      bo = `<path d="M90 114 Q100 122 110 114" ${st}/>`;
+  }
+  const conChullo = o.accesorio === 'chullo';
+  return lienzo('#d9f3fb',
+    (conChullo ? '' : `<path d="M100 48 L100 26" ${T(3)}/><circle cx="100" cy="21" r="8" fill="#ff7aa8" ${T()}/>`)
+    + `<rect x="60" y="156" width="80" height="56" rx="22" fill="#c4e9f5" ${T()}/>`
+    + `<path d="${corazon(100, 180, 9)}" fill="#ff7aa8" ${T(1.6)}/>`
+    + `<rect x="88" y="144" width="24" height="16" rx="4" fill="#a7d8ea" ${T()}/>`
+    + `<circle cx="40" cy="100" r="12" fill="#ffb3c7" ${T()}/><circle cx="160" cy="100" r="12" fill="#ffb3c7" ${T()}/>`
+    + `<rect x="42" y="46" width="116" height="104" rx="34" fill="#eef8fc" ${T()}/>`
+    + `<rect x="54" y="60" width="92" height="74" rx="20" fill="#1d2a4a" ${T(2)}/>`
+    + `<path d="M62 72 Q66 66 74 66" stroke="#fff" stroke-width="3" opacity=".35" fill="none" stroke-linecap="round"/>`
+    + `<rect x="60" y="108" width="12" height="6" rx="3" fill="#ff8fb8" opacity=".75"/><rect x="128" y="108" width="12" height="6" rx="3" fill="#ff8fb8" opacity=".75"/>`
+    + `<g filter="url(#brillo)">${ojos}${bo}${extra}</g>`
+    + (conChullo ? chullo(44, 156, 14, 64) : ''));
+}
+
+function amaru(e) {
+  const piel = '#9fcd86';
+  const hex = (x, y, r) => {
+    let d = '';
+    for (let i = 0; i < 6; i++) { const a = Math.PI / 3 * i + Math.PI / 6; d += (i ? 'L' : 'M') + f(x + r * Math.cos(a)) + ' ' + f(y + r * Math.sin(a)); }
+    return `<path d="${d}Z" fill="#d39a5a" ${T(2)}/>`;
+  };
+  return lienzo('#eef6df', `
+    <ellipse cx="100" cy="214" rx="90" ry="56" fill="#b5793f" ${T()}/>
+    ${hex(62, 188, 14)}${hex(100, 176, 14)}${hex(138, 188, 14)}
+    <path d="M78 146 Q76 176 70 200 L130 200 Q124 176 122 146 Z" fill="${piel}" ${T()}/>
+    <ellipse cx="100" cy="108" rx="47" ry="50" fill="${piel}" ${T()}/>
+    ${chullo(56, 144, 40, 82, { base: '#e2572b', franja: '#ffd23f', acento: '#2e86de' })}
+    ${rostro({ ex1: 82, ex2: 118, ey: 110, cy: 89, my: 141, mejY: 128 }, e,
+      { s: .78, iris: '#3b2a1a', piel, ceja: { color: '#f7f4ec', grosor: 6, borde: LINEA } })}
+    <circle cx="82" cy="110" r="16" fill="#fff" fill-opacity=".18" stroke="#6b4423" stroke-width="3.5"/>
+    <circle cx="118" cy="110" r="16" fill="#fff" fill-opacity=".18" stroke="#6b4423" stroke-width="3.5"/>
+    <path d="M98 108 Q100 104 102 108" fill="none" stroke="#6b4423" stroke-width="3"/>
+    <path d="M66 106 L54 102 M134 106 L146 102" stroke="#6b4423" stroke-width="3" stroke-linecap="round"/>
+    <path d="M73 101 L79 97 M109 101 L115 97" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>
+    <circle cx="96" cy="127" r="1.8" fill="${LINEA}"/><circle cx="104" cy="127" r="1.8" fill="${LINEA}"/>
+    <path d="M90 156 Q100 172 110 156 Q100 162 90 156 Z" fill="#f7f4ec" ${T(2)}/>`);
+}
+
+function pico(e) {
+  const o = '#ffb23f', t = T(2.2);
+  switch (e) {
+    case 'feliz':
+      return `<path d="M86 124 L114 124 L100 147 Z" fill="#8c2f45" ${t}/><path d="M86 122 L114 122 L100 133 Z" fill="${o}" ${t}/><path d="M92 141 L108 141 L100 148 Z" fill="${o}" ${t}/>`;
+    case 'sorprendido':
+      return `<ellipse cx="100" cy="136" rx="8" ry="9" fill="#8c2f45" ${t}/><path d="M88 120 L112 120 L100 130 Z" fill="${o}" ${t}/>`;
+    case 'triste': return `<path d="M90 124 L110 124 L100 142 Z" fill="${o}" ${t}/>`;
+    case 'pensativo': return `<path d="M90 122 L114 120 L106 136 Z" fill="${o}" ${t}/>`;
+    default: return `<path d="M88 122 L112 122 L100 136 Z" fill="${o}" ${t}/><path d="M93 127 L107 127" stroke="${LINEA}" stroke-width="1.5" opacity=".5"/>`;
+  }
+}
+function pichu(e) {
+  const plum = '#b39878', cara = '#f0e4d2';
+  return lienzo('#fff0e0', `
+    <ellipse cx="46" cy="176" rx="14" ry="26" transform="rotate(20 46 176)" fill="#8f7458" ${T()}/>
+    <ellipse cx="154" cy="176" rx="14" ry="26" transform="rotate(-20 154 176)" fill="#8f7458" ${T()}/>
+    <ellipse cx="100" cy="184" rx="60" ry="42" fill="#a68a6d" ${T()}/>
+    <path d="M48 174 Q58 152 86 152 L90 204 L46 204 Z" fill="#4fae7a" ${T(2)}/>
+    <path d="M152 174 Q142 152 114 152 L110 204 L154 204 Z" fill="#4fae7a" ${T(2)}/>
+    <rect x="120" y="176" width="22" height="16" rx="3" fill="#3f9568" ${T(1.8)}/>
+    <circle cx="131" cy="174" r="8" fill="#ffd23f" ${T(1.8)}/>
+    <text x="131" y="177" font-size="8" font-weight="700" text-anchor="middle" fill="${LINEA}" font-family="Andika, sans-serif">S/</text>
+    <path d="M90 56 Q76 40 82 28 Q88 44 98 54 Z" fill="#8a6d52" ${T(2)}/>
+    <path d="M96 54 Q88 30 102 20 Q98 38 106 52 Z" fill="#8a6d52" ${T(2)}/>
+    <path d="M104 54 Q110 34 126 32 Q114 42 112 56 Z" fill="#8a6d52" ${T(2)}/>
+    <circle cx="100" cy="104" r="52" fill="${plum}" ${T()}/>
+    <ellipse cx="100" cy="112" rx="38" ry="30" fill="${cara}"/>
+    <path d="M56 132 Q100 162 144 132 L146 142 Q100 174 54 142 Z" fill="#c8693a" ${T(2)}/>
+    ${rostro({ ex1: 80, ex2: 120, ey: 104, cy: 84, my: 0, mejY: 122 }, e,
+      { iris: '#2a1a10', piel: cara, ceja: { color: '#6b5038', grosor: 4 }, sinBoca: true })}
+    ${pico(e)}`);
+}
+
+function nebu(e, o = {}) {
+  const gris = !!o.gris;
+  const relleno = gris ? 'url(#gNebuGris)' : 'url(#gNebu)';
+  const C = [[100, 76, 42], [64, 102, 36], [136, 102, 36], [100, 128, 52], [50, 142, 28], [150, 142, 28], [76, 164, 28], [124, 164, 28]];
+  const nube = C.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="${LINEA}" stroke-width="5.5"/>`).join('')
+    + C.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${relleno}"/>`).join('');
+  const brillos = gris ? '' : destello(36, 58, 8, '#fff6a8') + destello(166, 56, 7, '#fff') + destello(170, 180, 6, '#fff6a8') + destello(30, 182, 5, '#fff');
+  const letra = (t, x, y, r, tam = 15) =>
+    `<text x="${x}" y="${y}" font-size="${tam}" font-weight="700" font-family="Andika, sans-serif" text-anchor="middle" fill="${gris ? '#e6e3ec' : '#fff'}" stroke="${LINEA}" stroke-width="2.4" paint-order="stroke" transform="rotate(${r} ${x} ${y})">${t}</text>`;
+  const hipo = e === 'hipo'
+    ? `<circle cx="158" cy="44" r="22" fill="#fff" ${T(2.5)}/><circle cx="138" cy="66" r="5" fill="#fff" ${T(2)}/>`
+      + `<text x="158" y="49" font-size="14" font-weight="700" text-anchor="middle" font-family="Andika, sans-serif" fill="${LINEA}">¡hip!</text>`
+    : '';
+  return lienzo(gris ? '#ecebf0' : '#f3e6ff', brillos + nube
+    + letra('a', 56, 128, -15) + letra('ñ', 144, 128, 12) + letra('e', 84, 178, -8, 13) + letra('s', 120, 180, 10, 13)
+    + rostro({ ex1: 80, ex2: 120, ey: 106, cy: 86, my: 142, mejY: 126 }, e,
+      { s: 1.15, iris: gris ? '#6d6880' : '#7a4fd6', piel: gris ? '#c9c5d3' : '#ecc9ff' })
+    + hipo);
+}
+
+function copion(e) {
+  const piel = '#86e6a8';
+  return lienzo('#e3f9ea', `
+    <ellipse cx="100" cy="182" rx="70" ry="13" fill="#6fd393" ${T()}/>
+    <path d="M100 36 C132 66 166 100 162 144 C158 184 42 184 38 144 C34 100 68 66 100 36 Z" fill="${piel}" ${T()}/>
+    <ellipse cx="70" cy="96" rx="9" ry="18" transform="rotate(28 70 96)" fill="#fff" opacity=".65"/>
+    <circle cx="136" cy="152" r="5" fill="#fff" opacity=".5"/><circle cx="58" cy="158" r="3.5" fill="#fff" opacity=".5"/><circle cx="144" cy="120" r="3" fill="#fff" opacity=".45"/>
+    ${rostro({ ex1: 83, ex2: 117, ey: 120, cy: 101, my: 151, mejY: 138 }, e, { s: .95, iris: '#1f6b3e', piel, base: 'presumido' })}`);
+}
+
+function reves(e) {
+  const cuerpo = 'M100 34 Q160 40 164 110 Q160 176 100 182 Q40 176 36 110 Q40 40 100 34 Z';
+  const id = nid();
+  return lienzo('#fff0dc', `
+    <clipPath id="${id}"><path d="${cuerpo}"/></clipPath>
+    <g clip-path="url(#${id})">
+      <rect width="200" height="200" fill="#ffb057"/>
+      <path d="M100 20 L108 44 L94 68 L108 92 L94 116 L108 140 L94 164 L100 196 L200 196 L200 20 Z" fill="#7cc0ff"/>
+    </g>
+    <path d="M100 30 L108 44 L94 68 L108 92 L94 116 L108 140 L94 164 L100 186" fill="none" stroke="#fff" stroke-width="3" opacity=".8"/>
+    <path d="${cuerpo}" fill="none" ${T()}/>
+    <rect x="66" y="180" width="68" height="8" rx="3" fill="#3a2a4a" ${T(2)}/>
+    <rect x="78" y="187" width="44" height="20" fill="#3a2a4a" ${T(2)}/><rect x="78" y="190" width="44" height="5" fill="#ff6b8b"/>
+    <path d="M26 86 A22 22 0 0 1 50 58" fill="none" ${T(3)} stroke-linecap="round"/><path d="M50 58 l-3 9 M50 58 l-9 0" ${T(3)} stroke-linecap="round"/>
+    <path d="M174 134 A22 22 0 0 1 150 162" fill="none" ${T(3)} stroke-linecap="round"/><path d="M150 162 l3 -9 M150 162 l9 0" ${T(3)} stroke-linecap="round"/>
+    <g transform="rotate(180 100 110)">${rostro({ ex1: 82, ex2: 118, ey: 104, cy: 85, my: 136, mejY: 122 }, e, { iris: '#3a2a6a' })}</g>`);
+}
+
+function borron(e) {
+  const B = '#2d2f5e', claro = '#c9cfff';
+  const partes = [['c', 100, 112, 58], ['c', 58, 84, 22], ['c', 144, 80, 20], ['c', 150, 142, 22], ['c', 54, 146, 20], ['c', 100, 56, 18], ['r', 74, 150, 14, 44], ['r', 120, 154, 12, 34]];
+  const forma = (p, a) => p[0] === 'c'
+    ? `<circle cx="${p[1]}" cy="${p[2]}" r="${p[3]}" ${a}/>`
+    : `<rect x="${p[1]}" y="${p[2]}" width="${p[3]}" height="${p[4]}" rx="${p[3] / 2}" ${a}/>`;
+  const mancha = partes.map((p) => forma(p, `fill="none" stroke="${LINEA}" stroke-width="5.5"`)).join('')
+    + partes.map((p) => forma(p, `fill="${B}"`)).join('');
+  const gotas = [[28, 58, 7], [176, 100, 6], [34, 184, 5], [172, 186, 6]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${B}" ${T(2)}/>`).join('');
+  const achis = e === 'achis'
+    ? `<text x="150" y="30" font-size="19" font-weight="700" text-anchor="middle" font-family="Andika, sans-serif" fill="#fff" stroke="${LINEA}" stroke-width="4" paint-order="stroke">¡ACHÍS!</text>`
+      + [[130, 172, 3], [142, 166, 2.5], [118, 178, 2.5], [150, 178, 3]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#9fb0ff"/>`).join('')
+    : '';
+  return lienzo('#e6e8ff', gotas + mancha
+    + `<path d="M62 74 Q70 64 82 62" stroke="#fff" stroke-width="4" opacity=".3" fill="none" stroke-linecap="round"/>`
+    + rostro({ ex1: 80, ex2: 120, ey: 104, cy: 83, my: 147, mejY: 124 }, e, {
+      s: 1.12, iris: '#7fa0ff', piel: B, lineaOjo: '#0d0e22',
+      ceja: { color: claro, grosor: 4.5 }, boca: { linea: claro, interior: '#0d0e22' }, mej: { color: '#ff8fb8', op: .6 },
+    })
+    + `<circle cx="100" cy="127" r="8" fill="#ff6b7a" ${T(2)}/><circle cx="97" cy="124" r="2.5" fill="#fff" opacity=".8"/>`
+    + achis);
+}
+
+function enredo(e) {
+  const id = nid();
+  return lienzo('#ffe3ec', `
+    <path d="M160 150 q30 8 22 30 t18 18" fill="none" stroke="#ffd23f" stroke-width="4" stroke-linecap="round"/>
+    <path d="M44 72 q-28 -8 -22 -34 t-10 -20" fill="none" stroke="#2ec4b6" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="100" cy="112" r="64" fill="#e8457a"/>
+    <clipPath id="${id}"><circle cx="100" cy="112" r="63"/></clipPath>
+    <g clip-path="url(#${id})" fill="none" stroke-linecap="round">
+      <path d="M28 82 Q100 132 172 72" stroke="#ffd23f" stroke-width="8"/>
+      <path d="M28 122 Q100 172 172 112" stroke="#2ec4b6" stroke-width="8"/>
+      <path d="M40 160 Q100 192 160 156" stroke="#fff" stroke-width="6"/>
+      <path d="M58 54 Q100 74 142 48" stroke="#fff" stroke-width="6"/>
+      <path d="M52 56 Q92 120 70 182" stroke="#ffd23f" stroke-width="6" opacity=".9"/>
+      <path d="M150 58 Q110 120 136 182" stroke="#2ec4b6" stroke-width="6" opacity=".9"/>
+    </g>
+    <circle cx="100" cy="112" r="64" fill="none" ${T()}/>
+    <ellipse cx="100" cy="122" rx="46" ry="34" fill="#f7a3bf" ${T(2)}/>
+    ${rostro({ ex1: 82, ex2: 118, ey: 116, cy: 98, my: 142, mejY: 132 }, e, { iris: '#6a1f3d', piel: '#f7a3bf' })}`);
+}
+
+/* =====================================================================
+   2. PERSONAJES
+   ===================================================================== */
+const EXP_BASE = ['normal', 'feliz', 'sorprendido', 'pensativo', 'triste'];
+const ETIQUETAS = { normal: 'Normal', feliz: 'Feliz', sorprendido: 'Sorprendido', pensativo: 'Pensativo', triste: 'Triste', confundido: 'Confundido', hipo: 'Hipo', achis: '¡Achís!' };
+
+const PERSONAJES = {
+  robi:   { nombre: 'ROBI', color: '#3fb6d9', voz: { pitch: 1.35 }, exp: [...EXP_BASE, 'confundido'], dibujo: robi,
+            desc: 'Copiloto. Confunde gemelas y espejos hasta que lo arreglamos.', frase: '¡Hola, cadete! Soy ROBI, tu copiloto.' },
+  killa:  { nombre: 'Comandante Killa', color: '#8e6bd1', voz: { pitch: 1.0 }, exp: EXP_BASE, dibujo: killa,
+            desc: 'Jefa de la Base Estelar Inti.', frase: 'Cadete, la galaxia cuenta contigo.' },
+  tika:   { nombre: 'Tika', color: '#ff7eb3', voz: { pitch: 1.45 }, exp: EXP_BASE, dibujo: tika,
+            desc: 'Gemela del Planeta Gemelo.', frase: 'Yo digo rápido…' },
+  taka:   { nombre: 'Taka', color: '#4fbf7f', voz: { pitch: 1.3 }, exp: EXP_BASE, dibujo: taka,
+            desc: 'Gemelo del Planeta Gemelo.', frase: '…¡y yo digo veloz!' },
+  rirpu:  { nombre: 'Reina Rirpu', color: '#6c9cf0', voz: { pitch: 1.15 }, exp: EXP_BASE, dibujo: rirpu,
+            desc: 'Reina del Planeta Espejo.', frase: 'Cada palabra tiene su reflejo contrario.' },
+  amaru:  { nombre: 'Abuelo Amaru', color: '#c98a3f', voz: { pitch: .7, rate: .9 }, exp: EXP_BASE, dibujo: amaru,
+            desc: 'Tortuga cuentacuentos del Planeta Frase.', frase: 'Había una vez… una palabra perdida.' },
+  pichu:  { nombre: 'Pichu', color: '#e07a3f', voz: { pitch: 1.7, rate: 1.05 }, exp: EXP_BASE, dibujo: pichu,
+            desc: 'Comerciante de la feria del Planeta Mezcla.', frase: '¡Pase, pase! ¡Palabras frescas!' },
+  copion: { nombre: 'Copión', color: '#3fbf6f', voz: { pitch: 1.2 }, exp: EXP_BASE, dibujo: copion,
+            desc: 'Jefe 1. Cree que las gemelas «se escriben parecido».', frase: '¡Cama y camello son gemelas!' },
+  reves:  { nombre: 'Revés', color: '#ff9f43', voz: { pitch: .9 }, exp: EXP_BASE, dibujo: reves,
+            desc: 'Jefe 2. Confunde espejos con gemelas.', frase: '¡Lo contrario de feliz es contento!' },
+  borron: { nombre: 'Borrón', color: '#5a5fa8', voz: { pitch: .8 }, exp: [...EXP_BASE, 'achis'], dibujo: borron,
+            desc: 'Jefe 3. Estornuda y borra palabras.', frase: '¡A… a… achís!' },
+  enredo: { nombre: 'Enredo', color: '#e8457a', voz: { pitch: 1.1 }, exp: EXP_BASE, dibujo: enredo,
+            desc: 'Jefe 4. Mezcla gemelas y espejos.', frase: '¡Estoy todo enredado!' },
+  nebu:   { nombre: 'Nebulosa', color: '#b07cff', voz: { pitch: 1.6 }, exp: [...EXP_BASE, 'hipo'], dibujo: nebu,
+            desc: 'La Nebulosa Muda: una bebé glotona.', frase: '¡Hip! ¡Alegre!' },
+  cadete: { nombre: '{nombre}', color: '#ff8a3d', voz: { pitch: 1.2 }, exp: EXP_BASE, dibujo: (e, o) => cadete(o.avatar ?? 0, e),
+            desc: 'El alumno.', frase: '¡Misión aceptada!' },
+};
+
+function retrato(id, e = 'normal', ctx = {}) {
+  const p = PERSONAJES[id];
+  return p.dibujo(e, ctx).replace('<svg ', `<svg aria-label="${plantilla(p.nombre, ctx)} (${ETIQUETAS[e] ?? e})" `);
+}
+
+/* =====================================================================
+   3. VOZ (Web Speech API)
+   ===================================================================== */
+const Voz = {
+  voz: null,
+  automatica: true,
+  disponible: 'speechSynthesis' in window,
+  iniciar(alCambiar) {
+    if (!this.disponible) { alCambiar?.(null); return; }
+    const elegir = () => {
+      const voces = speechSynthesis.getVoices();
+      const norm = (l) => l.replace('_', '-').toLowerCase();
+      const orden = ['es-pe', 'es-419', 'es-us', 'es-mx', 'es-co', 'es-cl', 'es-ar', 'es-es'];
+      let mejor = null;
+      for (const pref of orden) {
+        const deEse = voces.filter((v) => norm(v.lang) === pref);
+        mejor = deEse.find((v) => /google/i.test(v.name)) ?? deEse[0];
+        if (mejor) break;
+      }
+      this.voz = mejor ?? voces.find((v) => norm(v.lang).startsWith('es')) ?? null;
+      alCambiar?.(this.voz);
+    };
+    elegir();
+    speechSynthesis.addEventListener('voiceschanged', elegir);
+  },
+  decir(texto, { pitch = 1, rate = 1 } = {}) {
+    if (!this.disponible) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(texto.replace(/[«»▶⟲✕]/g, '').replace(/…/g, '... '));
+    u.lang = this.voz?.lang ?? 'es-419';
+    if (this.voz) u.voice = this.voz;
+    u.rate = .9 * rate;
+    u.pitch = pitch;
+    u.volume = .85;
+    // Chrome a veces ignora un speak() inmediatamente después de cancel().
+    setTimeout(() => speechSynthesis.speak(u), 60);
+  },
+  callar() { if (this.disponible) speechSynthesis.cancel(); },
+};
+
+/* =====================================================================
+   4. CUADRO DE NOVELA VISUAL
+   ===================================================================== */
+const $ = (s) => document.querySelector(s);
+const plantilla = (t, ctx) => t.replace(/\{(\w+)\}/g, (m, k) => ctx[k] ?? m);
+
+class Dialogo {
+  constructor(ctx) {
+    this.ctx = ctx;
+    this.cola = [];
+    this.i = -1;
+    this.historial = [];
+    this.escribiendo = false;
+    this.esperandoOpcion = false;
+    this.el = {
+      vn: $('#vn'), marco: $('#vnMarco'), retrato: $('#vnRetrato'), nombre: $('#vnNombre'),
+      texto: $('#vnTexto'), lector: $('#vnLector'), sig: $('#vnSig'), opciones: $('#vnOpciones'),
+    };
+    this.el.marco.addEventListener('click', () => this.tocar());
+    document.querySelectorAll('.vn-botones button').forEach((b) =>
+      b.addEventListener('click', (ev) => { ev.stopPropagation(); this.accion(b.dataset.acc); }));
+  }
+
+  reproducir(lineas, alTerminar) {
+    this.cola = lineas.map((l) => ({ ...l }));
+    this.i = -1;
+    this.historial = [];
+    this.alTerminar = alTerminar;
+    this.mostrarCuadro();
+    this.siguiente();
+  }
+
+  siguiente() {
+    if (this.esperandoOpcion) return;
+    this.i++;
+    if (this.i >= this.cola.length) { this.terminar(); return; }
+    this.mostrar(this.cola[this.i]);
+  }
+
+  mostrar(l) {
+    const p = PERSONAJES[l.quien];
+    const texto = plantilla(l.texto, this.ctx);
+    this.actual = { linea: l, texto, p };
+    this.el.vn.style.setProperty('--c', p.color);
+    this.el.nombre.textContent = plantilla(p.nombre, this.ctx);
+    this.el.retrato.innerHTML = retrato(l.quien, l.expr ?? 'normal', this.ctx);
+    this.el.retrato.classList.remove('entra');
+    void this.el.retrato.offsetWidth;
+    this.el.retrato.classList.add('entra');
+    this.el.lector.textContent = `${plantilla(p.nombre, this.ctx)}: ${texto}`;
+    this.el.opciones.innerHTML = '';
+    this.historial.push({ quien: l.quien, expr: l.expr ?? 'normal', texto });
+    if (Voz.automatica) this.hablar();
+    this.escribir(texto);
+  }
+
+  escribir(texto) {
+    cancelAnimationFrame(this.raf);
+    this.escribiendo = true;
+    this.el.sig.classList.remove('si');
+    const inicio = performance.now(), porSegundo = 38;
+    const paso = (t) => {
+      const n = Math.min(texto.length, Math.floor((t - inicio) / 1000 * porSegundo));
+      this.pintarTexto(texto, n);
+      if (n < texto.length) this.raf = requestAnimationFrame(paso);
+      else this.alEscribir();
+    };
+    this.raf = requestAnimationFrame(paso);
+  }
+
+  pintarTexto(texto, n) {
+    const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    this.el.texto.innerHTML = `${esc(texto.slice(0, n))}<span class="fantasma">${esc(texto.slice(n))}</span>`;
+  }
+
+  alEscribir() {
+    this.escribiendo = false;
+    this.pintarTexto(this.actual.texto, this.actual.texto.length);
+    const ops = this.actual.linea.opciones;
+    if (ops) this.mostrarOpciones(ops);
+    else this.el.sig.classList.add('si');
+  }
+
+  mostrarOpciones(ops) {
+    this.esperandoOpcion = true;
+    this.el.opciones.innerHTML = '';
+    ops.forEach((op) => {
+      const b = document.createElement('button');
+      b.textContent = plantilla(op.texto, this.ctx);
+      b.addEventListener('click', (ev) => { ev.stopPropagation(); this.elegir(op); });
+      this.el.opciones.appendChild(b);
+    });
+  }
+
+  elegir(op) {
+    this.esperandoOpcion = false;
+    this.el.opciones.innerHTML = '';
+    this.ctx.eleccion = op.texto.replace(/[¡!]/g, '');
+    const extra = [{ quien: 'cadete', expr: op.expr ?? 'feliz', texto: op.texto }, ...(op.respuesta ?? [])];
+    this.cola.splice(this.i + 1, 0, ...extra);
+    this.siguiente();
+  }
+
+  tocar() {
+    if (this.el.vn.classList.contains('oculta')) { this.mostrarCuadro(); return; }
+    if (this.escribiendo) { cancelAnimationFrame(this.raf); this.alEscribir(); return; }
+    this.siguiente();
+  }
+
+  hablar() {
+    if (!this.actual) return;
+    Voz.decir(this.actual.texto, this.actual.p.voz);
+  }
+
+  accion(acc) {
+    if (acc === 'voz') this.hablar();
+    if (acc === 'saltar') this.saltar();
+    if (acc === 'historial') this.abrirHistorial();
+    if (acc === 'ocultar') this.ocultarCuadro();
+  }
+
+  // Salta hasta la siguiente elección (nunca se salta una elección) o hasta el final.
+  saltar() {
+    if (this.esperandoOpcion) return;
+    if (this.actual?.linea.opciones) { this.tocar(); return; }
+    cancelAnimationFrame(this.raf);
+    Voz.callar();
+    const j = this.cola.findIndex((l, k) => k > this.i && l.opciones);
+    if (j === -1) { this.terminar(); return; }
+    for (let k = this.i + 1; k < j; k++) {
+      const l = this.cola[k];
+      this.historial.push({ quien: l.quien, expr: l.expr ?? 'normal', texto: plantilla(l.texto, this.ctx) });
+    }
+    this.i = j - 1;
+    this.escribiendo = false;
+    this.siguiente();
+  }
+
+  abrirHistorial() {
+    const lista = $('#listaHistorial');
+    lista.innerHTML = '';
+    this.historial.forEach((h) => {
+      const li = document.createElement('li');
+      const nombre = plantilla(PERSONAJES[h.quien].nombre, this.ctx);
+      li.innerHTML = retrato(h.quien, h.expr, this.ctx) + `<div><b></b><span></span></div>`;
+      li.querySelector('b').textContent = nombre;
+      li.querySelector('span').textContent = h.texto;
+      lista.appendChild(li);
+    });
+    $('#panelHistorial').hidden = false;
+    lista.scrollTop = lista.scrollHeight;
+  }
+
+  ocultarCuadro() {
+    this.el.vn.classList.add('oculta');
+    $('#avisoOculto').hidden = false;
+  }
+
+  mostrarCuadro() {
+    this.el.vn.classList.remove('oculta');
+    $('#avisoOculto').hidden = true;
+  }
+
+  terminar() {
+    cancelAnimationFrame(this.raf);
+    this.escribiendo = false;
+    this.el.sig.classList.remove('si');
+    this.alTerminar?.();
+  }
+}
+
+/* =====================================================================
+   5. GUION DE LA MUESTRA (prólogo + presentación de personajes)
+   ===================================================================== */
+const MUESTRA = [
+  { quien: 'killa', expr: 'feliz', texto: '¡Cadete {nombre}! ¡Una nebulosa glotona se está comiendo las palabras de la galaxia!' },
+  { quien: 'robi', expr: 'confundido', texto: '¡Hola, cadete! Hoy es un día muy… ¿triste?', opciones: [
+    { texto: '¡Te equivocaste, ROBI!', expr: 'sorprendido', respuesta: [
+      { quien: 'robi', expr: 'feliz', texto: '¡Tienes razón! Quise decir ALEGRE. ¡Gracias por corregirme!' }] },
+    { texto: '¡Bien dicho!', expr: 'normal', respuesta: [
+      { quien: 'robi', expr: 'pensativo', texto: 'Mmm… creo que no. Triste es lo contrario. ¡Quise decir ALEGRE!' }] },
+  ] },
+  { quien: 'killa', expr: 'normal', texto: 'La nebulosa le mordió el chip a ROBI. Ahora confunde las palabras.' },
+  { quien: 'killa', expr: 'feliz', texto: 'Los chaskis llevaban mensajes por los caminos del Inca. ¡Tú llevarás palabras por las estrellas!' },
+  { quien: 'robi', expr: 'normal', texto: '¿Cómo te sientes, cadete?', opciones: [
+    { texto: '¡Feliz!', expr: 'feliz' },
+    { texto: '¡Alegre!', expr: 'feliz' },
+  ] },
+  { quien: 'robi', expr: 'feliz', texto: '¡Feliz y alegre significan lo mismo! ¡Son palabras gemelas!' },
+  { quien: 'robi', expr: 'sorprendido', texto: '¡Mira, cadete! Estos son los amigos que conoceremos en el viaje.' },
+  { quien: 'tika', expr: 'feliz', texto: 'Yo digo RÁPIDO…' },
+  { quien: 'taka', expr: 'feliz', texto: '…¡y yo digo VELOZ! ¡Somos palabras gemelas!' },
+  { quien: 'rirpu', expr: 'normal', texto: 'En mi planeta, cada palabra tiene su espejo: ALTO y BAJO.' },
+  { quien: 'amaru', expr: 'pensativo', texto: 'Mmm… a mis cuentos les faltan palabras. ¿Me ayudarás a completarlos?' },
+  { quien: 'pichu', expr: 'feliz', texto: '¡Pase, pase! ¡En mi feria hay palabras gemelas y palabras espejo!' },
+  { quien: 'copion', expr: 'normal', texto: '¡CAMA y CAMELLO son gemelas porque empiezan igual!', opciones: [
+    { texto: '¡Te equivocaste, Copión!', expr: 'sorprendido', respuesta: [
+      { quien: 'copion', expr: 'sorprendido', texto: '¿Ah, no? ¿Las gemelas significan lo mismo? ¡Ahhh!' }] },
+    { texto: '¡Bien dicho!', expr: 'normal', respuesta: [
+      { quien: 'robi', expr: 'pensativo', texto: 'Mmm… No, Copión. Las gemelas significan lo mismo, aunque se escriban distinto.' }] },
+  ] },
+  { quien: 'reves', expr: 'pensativo', texto: '¡Lo contrario de FELIZ es… CONTENTO!' },
+  { quien: 'robi', expr: 'triste', texto: '¡No, Revés! Esas son gemelas. Lo contrario de feliz es TRISTE.' },
+  { quien: 'borron', expr: 'achis', texto: '¡A… a… ACHÍS! ¡Uy! Borré otra palabra.' },
+  { quien: 'enredo', expr: 'sorprendido', texto: '¡Estoy todo enredado! ¿Cuáles son gemelas y cuáles son espejo?' },
+  { quien: 'nebu', expr: 'hipo', texto: '¡Hip! ¡ALEGRE! ¡Hip! ¡CONTENTO!' },
+  { quien: 'nebu', expr: 'feliz', texto: '¡GRACIAS! ¿Jugamos otra vez?' },
+  { quien: 'robi', expr: 'feliz', texto: '¡Fin de la muestra, cadete {nombre}!' },
+];
+
+/* =====================================================================
+   6. FONDO, HUD Y GALERÍA
+   ===================================================================== */
+function azar(semilla) {
+  return () => { semilla |= 0; semilla = semilla + 0x6D2B79F5 | 0; let t = Math.imul(semilla ^ semilla >>> 15, 1 | semilla); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+function pintarCielo() {
+  const cv = $('#cielo');
+  const r = cv.getBoundingClientRect();
+  if (!r.width) return;
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  cv.width = r.width * dpr; cv.height = r.height * dpr;
+  const g = cv.getContext('2d');
+  g.scale(dpr, dpr);
+  const W = r.width, H = r.height, rnd = azar(42);
+  const fondo = g.createLinearGradient(0, 0, 0, H);
+  fondo.addColorStop(0, '#1b1640'); fondo.addColorStop(.6, '#3b2a6b'); fondo.addColorStop(1, '#7a3f7a');
+  g.fillStyle = fondo; g.fillRect(0, 0, W, H);
+  [[.25, .35, '#ff7eb380'], [.7, .25, '#7ff6ff40'], [.55, .7, '#b07cff60']].forEach(([x, y, c]) => {
+    const rg = g.createRadialGradient(x * W, y * H, 0, x * W, y * H, H * .5);
+    rg.addColorStop(0, c); rg.addColorStop(1, '#00000000');
+    g.fillStyle = rg; g.fillRect(0, 0, W, H);
+  });
+  for (let i = 0; i < 180; i++) {
+    g.globalAlpha = .4 + rnd() * .6;
+    g.fillStyle = rnd() > .8 ? '#ffe9a8' : '#fff';
+    g.beginPath(); g.arc(rnd() * W, rnd() * H, rnd() * 1.6 + .4, 0, Math.PI * 2); g.fill();
+  }
+  g.globalAlpha = 1;
+  const planeta = (x, y, rad, c1, c2, anillo) => {
+    const pg = g.createRadialGradient(x - rad * .4, y - rad * .4, rad * .1, x, y, rad);
+    pg.addColorStop(0, c1); pg.addColorStop(1, c2);
+    if (anillo) { g.strokeStyle = '#ffd23f'; g.lineWidth = rad * .12; g.beginPath(); g.ellipse(x, y, rad * 1.7, rad * .45, -.3, Math.PI, Math.PI * 2); g.stroke(); }
+    g.fillStyle = pg; g.strokeStyle = LINEA; g.lineWidth = 3;
+    g.beginPath(); g.arc(x, y, rad, 0, Math.PI * 2); g.fill(); g.stroke();
+    if (anillo) { g.strokeStyle = '#ffd23f'; g.lineWidth = rad * .12; g.beginPath(); g.ellipse(x, y, rad * 1.7, rad * .45, -.3, 0, Math.PI); g.stroke(); }
+  };
+  planeta(W * .78, H * .36, H * .15, '#ffd0e0', '#ff7eb3', true);
+  planeta(W * .16, H * .3, H * .07, '#c8fff4', '#2ec4b6', false);
+}
+
+function pintarHud() {
+  const lleno = (c) => `<svg viewBox="0 0 24 24"><path d="M12 21C5 15 2 11 2 7.5 2 4.5 4.5 2 7.5 2c2 0 3.5 1 4.5 2.5C13 3 14.5 2 16.5 2 19.5 2 22 4.5 22 7.5 22 11 19 15 12 21z" fill="${c}" stroke="${LINEA}" stroke-width="2"/></svg>`;
+  $('#corazones').innerHTML = [1, 1, 1, 1, 0].map((x) => lleno(x ? '#ff8fab' : '#fff')).join('');
+}
+
+function pintarGaleria(ctx) {
+  const rejilla = $('#rejillaPersonajes');
+  rejilla.innerHTML = '';
+  Object.entries(PERSONAJES).filter(([id]) => id !== 'cadete').forEach(([id, p]) => {
+    const estado = { expr: 'normal', opciones: {} };
+    const ficha = document.createElement('article');
+    ficha.className = 'caja ficha';
+    ficha.style.setProperty('--c', p.color);
+    ficha.innerHTML = `<div class="foto"></div><h3></h3><p></p><div class="chips"></div>`;
+    ficha.querySelector('h3').textContent = p.nombre;
+    ficha.querySelector('p').textContent = p.desc;
+    const foto = ficha.querySelector('.foto'), chips = ficha.querySelector('.chips');
+    const dibujar = () => { foto.innerHTML = p.dibujo(estado.expr, { ...ctx, ...estado.opciones }); };
+    const marcar = () => chips.querySelectorAll('[data-exp]').forEach((c) => c.setAttribute('aria-pressed', c.dataset.exp === estado.expr));
+    p.exp.forEach((e) => {
+      const b = document.createElement('button');
+      b.className = 'chip'; b.dataset.exp = e;
+      b.textContent = (id === 'copion' && e === 'normal') ? 'Presumido' : ETIQUETAS[e];
+      b.addEventListener('click', () => { estado.expr = e; marcar(); dibujar(); });
+      chips.appendChild(b);
+    });
+    const extra = (texto, clave, valor) => {
+      const b = document.createElement('button');
+      b.className = 'chip'; b.textContent = texto; b.setAttribute('aria-pressed', 'false');
+      b.addEventListener('click', () => {
+        estado.opciones[clave] = estado.opciones[clave] ? undefined : valor;
+        b.setAttribute('aria-pressed', String(!!estado.opciones[clave])); dibujar();
+      });
+      chips.appendChild(b);
+    };
+    if (id === 'robi') extra('Con chullo', 'accesorio', 'chullo');
+    if (id === 'nebu') extra('En gris (al inicio)', 'gris', true);
+    const oir = document.createElement('button');
+    oir.className = 'chip'; oir.textContent = '🔊 Escuchar';
+    oir.addEventListener('click', () => Voz.decir(p.frase, p.voz));
+    chips.appendChild(oir);
+    marcar(); dibujar();
+    rejilla.appendChild(ficha);
+  });
+  pintarAvatares(ctx);
+}
+
+let exprAvatares = 'normal';
+function pintarAvatares(ctx) {
+  const cont = $('#expAvatares');
+  cont.innerHTML = '';
+  EXP_BASE.forEach((e) => {
+    const b = document.createElement('button');
+    b.className = 'chip'; b.textContent = ETIQUETAS[e]; b.setAttribute('aria-pressed', e === exprAvatares);
+    b.addEventListener('click', () => { exprAvatares = e; pintarAvatares(ctx); });
+    cont.appendChild(b);
+  });
+  const rejilla = $('#rejillaAvatares');
+  rejilla.innerHTML = '';
+  AVATARES.forEach((a, i) => {
+    const ficha = document.createElement('button');
+    ficha.className = 'caja ficha' + (ctx.avatar === i ? ' elegido' : '');
+    ficha.style.setProperty('--c', PERSONAJES.cadete.color);
+    ficha.setAttribute('aria-label', `Elegir avatar ${i + 1}`);
+    ficha.innerHTML = `<div class="foto">${cadete(i, exprAvatares)}</div><h3>Avatar ${i + 1}</h3><p>${ctx.avatar === i ? 'Elegido para la escena' : 'Toca para elegir'}</p>`;
+    ficha.addEventListener('click', () => { ctx.avatar = i; pintarAvatares(ctx); });
+    rejilla.appendChild(ficha);
+  });
+}
+
+/* =====================================================================
+   7. ARRANQUE
+   ===================================================================== */
+const ctx = { nombre: 'Ana', avatar: 0 };
+const dialogo = new Dialogo(ctx);
+
+function empezar() {
+  $('#inicio').hidden = true;
+  $('#fin').hidden = true;
+  dialogo.reproducir(MUESTRA, () => { $('#fin').hidden = false; });
+}
+
+$('#btnEmpezar').addEventListener('click', empezar);
+$('#btnOtraVez').addEventListener('click', empezar);
+$('#cerrarHistorial').addEventListener('click', () => { $('#panelHistorial').hidden = true; });
+$('#escena').addEventListener('click', (ev) => {
+  if (dialogo.el.vn.classList.contains('oculta') && !ev.target.closest('.cubre')) dialogo.mostrarCuadro();
+});
+$('#nombre').addEventListener('input', (ev) => { ctx.nombre = ev.target.value.trim() || 'Cadete'; });
+$('#vozAuto').addEventListener('change', (ev) => { Voz.automatica = ev.target.checked; if (!ev.target.checked) Voz.callar(); });
+document.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-tab]').forEach((x) => x.setAttribute('aria-selected', x === b));
+  $('#escena').hidden = b.dataset.tab !== 'escena';
+  $('#galeria').hidden = b.dataset.tab !== 'galeria';
+  if (b.dataset.tab === 'galeria') pintarAvatares(ctx);
+  else pintarCielo();
+}));
+document.addEventListener('keydown', (ev) => {
+  if ($('#escena').hidden || ev.target.closest('input, button')) return;
+  if (['Space', 'Enter', 'ArrowRight'].includes(ev.code)) { ev.preventDefault(); dialogo.tocar(); }
+});
+addEventListener('resize', pintarCielo);
+
+Voz.iniciar((v) => {
+  $('#estadoVoz').textContent = v ? `Voz: ${v.name} (${v.lang})` : 'Este navegador no tiene voz en español';
+});
+pintarCielo();
+pintarHud();
+pintarGaleria(ctx);
+</script>
+</body>
+</html>
