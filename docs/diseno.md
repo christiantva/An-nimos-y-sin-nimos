@@ -11,7 +11,7 @@ Estado: **en revisión** (historia aprobada, banco de palabras pendiente de apro
 | Tema | Decisión |
 |---|---|
 | Tecnología | Un solo `index.html`: HTML + CSS + JavaScript, Three.js por CDN (versión fija), Web Audio, Web Speech, localStorage |
-| Distribución | Enlace web con GitHub Pages desde este repositorio |
+| Distribución | Vercel (sitio estático conectado a este repositorio, sin build) |
 | Equipos | Tablets Android y laptops Windows con Chrome |
 | Duración | **Una sola sesión** de 35-40 min |
 | Estilo | Combinado: diálogos tipo novela visual en tonos pastel + espacio 3D con colores saturados |
@@ -199,3 +199,104 @@ Cada oración tiene una pista que deja **una sola** respuesta posible.
 - **Mezcla:** 8 pares para clasificar (gemela/espejo) tomados de ambos bancos + jefe Enredo 6.
 - **Corazón:** 8 preguntas mezcladas de todos los tipos.
 - Las preguntas se sortean en cada partida; las falladas vuelven a aparecer más adelante.
+
+---
+
+## 4. Plan de programación
+
+### 4.1 Archivos del repositorio
+```
+index.html          ← el juego completo (único archivo que se publica)
+muestra.html        ← página de muestra de personajes (fase 1, se borra al final)
+docs/diseno.md      ← este documento
+tests/              ← pruebas automáticas con Playwright (no se publican)
+vercel.json         ← solo cabeceras de caché; sin build
+```
+
+### 4.2 Librerías (por CDN, versión fija)
+- `three@0.160.0` vía importmap (jsDelivr) + `CSS2DRenderer` de `three/addons`.
+- Fuente Andika (Google Fonts).
+- Nada más: audio, voz, guardado, CSV y diploma se hacen con APIs del navegador.
+
+### 4.3 Estructura interna de `index.html`
+| # | Sección | Responsabilidad |
+|---|---|---|
+| 1 | `CONFIG` | Clave docente (1234), energía (5 corazones), escáneres (2), velocidades por planeta, nº de preguntas |
+| 2 | `BANCO` | Objeto JSON editable (sección 3 de este documento) |
+| 3 | `GUION` | Todas las escenas: `{quien, expresion, texto, eleccion?}` con `{nombre}` |
+| 4 | `PERSONAJES` | Nombre, color de marco y retrato SVG por capas con expresiones |
+| 5 | `Store` | localStorage con versión y migración; tolerante a errores |
+| 6 | `Audio` | Efectos y música generativa (Web Audio), silencio, "ducking" con la voz |
+| 7 | `Voz` | Web Speech: elige es-PE → es-419 → es-US → es; cola, cancelar, repetir |
+| 8 | `UI` | Cuadro de novela visual, HUD, pantallas (inicio, estación, panel, diploma) |
+| 9 | `Motor3D` | Renderer, cámara, estrellas, nave, asteroides, planetas, portales, jefes |
+| 10 | `Efectos` | Rayo de voz, partículas (pool fijo ≤ 300), estelas, palabra al cofre |
+| 11 | `Preguntas` | Genera la secuencia por planeta con dificultad progresiva y cola de repaso |
+| 12 | `Juego` | Máquina de estados y reglas (energía, puntos, estrellas, insignias) |
+| 13 | `Minijuegos` | Reparar la nave, pausa activa, armar el megáfono |
+| 14 | `Docente` | Resultados, CSV, editor del banco, importar/exportar JSON, datos del aula |
+| 15 | `Diploma` | Dibujo en canvas → PNG; impresión → PDF del navegador |
+
+### 4.4 Máquina de estados
+```
+INICIO → (nombre/avatar) → PROLOGO
+  → PLANETA(n): ESCENA_LLEGADA → OLEADAS(8) → ESCENA_JEFE → JEFE(6) → ESCENA_VICTORIA
+      energía 0 → ESTACION_RECARGA → reintenta el planeta conservando lo logrado
+  → ESTACION(n): HISTORIA → PAUSA_ACTIVA(60 s) → RECOMPENSAS → [Continuar misión]
+  → ... → CORAZON(8) → FINAL → DIPLOMA → PRACTICA_LIBRE
+```
+
+### 4.5 Datos guardados (localStorage)
+- `mp:v1:alumnos` → `{ [nombreNormalizado]: Alumno }`
+- `mp:v1:banco` → banco editado por el docente (si no existe, se usa el de fábrica)
+- `mp:v1:config` → clave, datos del aula, voz automática, volumen, modo apoyo, separador CSV
+
+```js
+Alumno = {
+  nombre, avatar, creado, ultimaSesion, tiempoJugadoSeg,
+  planetaActual, progresoPlaneta: { cola, indice, aciertos, errores },
+  planetas: { 1: { completado, estrellas, precision } , ... },
+  stats: { sinonimo:{a,e}, antonimo:{a,e}, oracion:{a,e}, clasificacion:{a,e} },
+  fallos: { "alegre→contento": 2, ... },
+  insignias: [], llaves: [], palabrasRescatadas: [],
+  nave: { color, calcomanias: [] }, robiAccesorio, modoApoyo, terminado
+}
+```
+Se guarda después de cada respuesta, para que recargar la página no pierda nada.
+
+### 4.6 Decisiones técnicas clave
+- **Palabras sobre asteroides con `CSS2DRenderer`**: texto HTML nítido, siempre de frente, ≥ 28 px; la tarjeta misma es el área táctil (grande).
+- **Entrada unificada** con Pointer Events (táctil + mouse) y raycasting con esferas invisibles más grandes que el asteroide.
+- **Horizontal**: aviso "Gira tu tablet" en vertical; botón de pantalla completa.
+- **Rendimiento**: materiales `MeshToonMaterial`, 1 luz ambiental + 1 direccional, sin sombras, geometrías de bajo polígono, `pixelRatio` máx. 1.5 con bajada automática si los FPS caen de 40, render en pausa con la pestaña oculta.
+- **Sin parpadeos**: ningún destello más de 3 veces por segundo.
+- **Asteroides sin castigo por tiempo**: en planetas 1-2 se detienen y flotan; desde el 3 dan la vuelta y regresan.
+- **CSV**: UTF-8 con BOM; separador configurable (`;` por defecto, `,` opcional) porque Excel usa el de la configuración regional de Windows.
+- **Modo prueba** (`?debug=1`): saltar escenas y responder solo, para las pruebas automáticas.
+
+### 4.7 Vercel
+- Importar el repositorio en Vercel → framework "Other", sin comando de build, carpeta raíz `/`.
+- Producción sale de la rama `main`; cada rama genera una URL de vista previa.
+- **Importante**: el progreso vive en el navegador y depende de la dirección. Los alumnos deben usar siempre la misma URL de producción (no las de vista previa).
+
+### 4.8 Fases
+| Fase | Entrega | Revisión |
+|---|---|---|
+| 0 | Esqueleto: `index.html`, importmap, `vercel.json` | — |
+| 1 | `muestra.html`: retratos SVG con expresiones + cuadro de diálogo + voz | **Docente revisa** |
+| 2 | Motor 3D: espacio, nave, asteroides con palabras, rayo de voz, toque/clic | — |
+| 3 | Planeta 1 completo: preguntas, energía, escáner, cofre, jefe Copión | — |
+| 4 | Planetas 2-4, Corazón de la Nebulosa e historia completa | **Docente prueba** |
+| 5 | Estaciones: pausa activa, recompensas, personalización, reparar la nave | — |
+| 6 | Alumnos y guardado | — |
+| 7 | Panel docente: resultados, CSV, editor del banco, JSON, datos del aula | — |
+| 8 | Diploma, práctica libre, música y pulido | — |
+| 9 | Verificación final (abajo) | **Docente aprueba** |
+
+### 4.9 Verificación final
+- Recorrido automático de principio a fin con Playwright, en modo táctil (tablet) y con mouse (laptop).
+- Cero errores en consola durante todo el recorrido.
+- Recargar a mitad de planeta y comprobar que se recupera el progreso.
+- CSV: comprobar BOM, tildes y ñ, y abrirlo con LibreOffice como prueba de Excel.
+- Revisión del banco: script que verifica que ningún distractor sea a la vez respuesta de otra pregunta del mismo tipo con la misma palabra objetivo y que todas las opciones estén completas.
+- Prueba de rendimiento con la CPU ralentizada 4× (simulación de tablet de gama media).
