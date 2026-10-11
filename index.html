@@ -1572,6 +1572,7 @@ const Sonido = {
 const Voz = {
   voz: null,
   disponible: 'speechSynthesis' in window,
+  turno: 0, cola: [], actual: null, vigia: 0, espera: 0,
   iniciar() {
     if (!this.disponible) return;
     const elegir = () => {
@@ -1586,24 +1587,83 @@ const Voz = {
     };
     elegir();
     speechSynthesis.addEventListener('voiceschanged', elegir);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) this.callar(); });
   },
-  decir(texto, { pitch = 1, rate = 1 } = {}) {
+  // Frases cortas: Chrome corta las locuciones largas (unos 15 s) y en tablets fallan más.
+  trozos(texto) {
+    const limpio = String(texto).replace(/[«»▶⟲✕_]/g, ' ').replace(/…/g, '... ').replace(/\s+/g, ' ').trim();
+    const frases = limpio.split(/(?<=[.!?:;])\s+/).filter(Boolean);
+    const res = [];
+    for (const f of frases) {
+      const ultimo = res[res.length - 1];
+      if (ultimo && ultimo.length + f.length < 90) res[res.length - 1] = `${ultimo} ${f}`;
+      else res.push(f);
+    }
+    return res.flatMap((f) => (f.length <= 160 ? [f] : f.split(/(?<=,)\s+/)));
+  },
+  ocupado() { return this.cola.length > 0 || !!this.actual || speechSynthesis.speaking || speechSynthesis.pending; },
+  // encolar: espera a que termine lo que se está diciendo en vez de cortarlo.
+  decir(texto, voz = {}, { encolar = false } = {}) {
     if (!this.disponible || !AJUSTES.sonido || !texto) return;
-    speechSynthesis.cancel();
-    const limpio = String(texto).replace(/[«»▶⟲✕_]/g, ' ').replace(/…/g, '... ');
-    const u = new SpeechSynthesisUtterance(limpio);
+    const items = this.trozos(texto).map((t) => ({ t, voz }));
+    if (!items.length) return;
+    if (encolar && this.ocupado()) { this.cola.push(...items); return; }
+    const turno = ++this.turno;
+    this.cola = items;
+    const habia = speechSynthesis.speaking || speechSynthesis.pending || !!this.actual;
+    clearTimeout(this.espera);
+    clearInterval(this.vigia);
+    this.actual = null;
+    if (habia) speechSynthesis.cancel();
+    // Chrome ignora a veces un speak() justo después de cancel(): se espera un momento.
+    this.espera = setTimeout(() => this.siguiente(turno), habia ? 150 : 0);
+  },
+  siguiente(turno) {
+    if (turno !== this.turno) return;
+    clearInterval(this.vigia);
+    const item = this.cola.shift();
+    if (!item) { this.actual = null; Sonido.agachar(false); return; }
+    const u = new SpeechSynthesisUtterance(item.t);
     u.lang = this.voz?.lang ?? 'es-419';
     if (this.voz) u.voice = this.voz;
-    u.rate = .9 * rate;
-    u.pitch = pitch;
+    u.rate = .9 * (item.voz.rate ?? 1);
+    u.pitch = item.voz.pitch ?? 1;
     u.volume = Math.min(1, AJUSTES.volumen + .1);
-    u.onstart = () => Sonido.agachar(true);
-    u.onend = u.onerror = () => Sonido.agachar(false);
-    // Chrome a veces ignora un speak() inmediatamente después de cancel().
-    setTimeout(() => speechSynthesis.speak(u), 60);
+    // Se guarda la referencia: si no, Chrome puede descartar la frase a la mitad.
+    this.actual = u;
+    let hecho = false, inicio = performance.now();
+    const fin = () => {
+      if (hecho) return;
+      hecho = true;
+      clearInterval(this.vigia);
+      if (this.actual === u) this.actual = null;
+      this.siguiente(turno);
+    };
+    u.onstart = () => { inicio = performance.now(); Sonido.agachar(true); };
+    u.onend = fin;
+    u.onerror = fin;
+    // Vigía: si el motor de voz se queda en pausa o se cuelga sin avisar, se recupera o pasa a la siguiente frase.
+    this.vigia = setInterval(() => {
+      if (turno !== this.turno || hecho) { clearInterval(this.vigia); return; }
+      if (speechSynthesis.paused) speechSynthesis.resume();
+      const espera = performance.now() - inicio;
+      if (!speechSynthesis.speaking && !speechSynthesis.pending && espera > 1200) fin();
+      else if (espera > 4000 + item.t.length * 160) { speechSynthesis.cancel(); fin(); }
+    }, 500);
+    if (speechSynthesis.paused) speechSynthesis.resume();
+    speechSynthesis.speak(u);
   },
-  auto(texto, voz) { if (AJUSTES.vozAuto && !AJUSTES.aulaSilenciosa) this.decir(texto, voz); },
-  callar() { if (this.disponible) speechSynthesis.cancel(); },
+  auto(texto, voz, opciones) { if (AJUSTES.vozAuto && !AJUSTES.aulaSilenciosa) this.decir(texto, voz, opciones); },
+  callar() {
+    if (!this.disponible) return;
+    this.turno++;
+    this.cola = [];
+    this.actual = null;
+    clearTimeout(this.espera);
+    clearInterval(this.vigia);
+    speechSynthesis.cancel();
+    Sonido.agachar(false);
+  },
 };
 
 /* =====================================================================
@@ -2874,7 +2934,7 @@ const Juego = {
       HUD.objetivo(preg);
       const lectura = AJUSTES.modoApoyo && preg.tipo !== 'clasificacion'
         ? `${preg.lectura} Las opciones son: ${preg.opciones.map((o) => o.texto).join(', ')}.` : preg.lectura;
-      Voz.auto(lectura, PERSONAJES.robi.voz);
+      Voz.auto(lectura, PERSONAJES.robi.voz, { encolar: true });
       Motor.lanzarOpciones(preg);
       HUD.escaner(prog.escaneres, preg.tipo !== 'clasificacion');
       HUD.reparar(a.energia <= 2);
@@ -3054,10 +3114,10 @@ const PausaActiva = {
     </div>`);
     const figura = el.querySelector('.figura'), inst = el.querySelector('.instruccion'), seg = el.querySelector('.seg'), aro = el.querySelector('.avance');
     let restante = total;
-    for (const ej of lista) {
+    for (const [k, ej] of lista.entries()) {
       figura.className = `figura ${ej.clase}`;
       inst.textContent = ej.texto;
-      Voz.auto(ej.texto, PERSONAJES.robi.voz);
+      Voz.auto(ej.texto, PERSONAJES.robi.voz, { encolar: k === 0 });
       for (let s = 0; s < porEj; s++) {
         seg.textContent = `${Math.ceil(restante)} segundos`;
         aro.style.strokeDashoffset = String(C * (1 - restante / total));
@@ -3168,7 +3228,7 @@ const Reparar = {
       <div class="reparar-grid">${fichas.map((x, i) => `<button data-i="${i}" aria-pressed="false"${x.t.length > 9 ? ' class="larga"' : ''}>${esc(x.t)}</button>`).join('')}</div>
       <div class="fila-botones" data-fin hidden><button class="boton-grande principal" data-ok>¡Nave reparada! Continuar ▶</button></div>
     </div>`);
-    Voz.auto(instruccion, PERSONAJES.robi.voz);
+    Voz.auto(instruccion, PERSONAJES.robi.voz, { encolar: true });
     let sel = null, unidas = 0;
     await new Promise((res) => {
       el.addEventListener('click', async (ev) => {
@@ -3821,7 +3881,7 @@ try {
   Motor.iniciar();
   HUD.sonido();
   eventosGlobales();
-  if (DEBUG) window.MP = { Juego, Motor, Alumnos, Docente, Preguntas, Diploma, Reparar, generarCSV, filasSalon, banco: () => BANCO, ajustes: () => AJUSTES };
+  if (DEBUG) window.MP = { Juego, Motor, Voz, Alumnos, Docente, Preguntas, Diploma, Reparar, generarCSV, filasSalon, banco: () => BANCO, ajustes: () => AJUSTES };
   arrancar();
 } catch (e) {
   UI.pantalla(`<div class="caja tarjeta"><h2>No se pudo iniciar el juego</h2><p>Este equipo no puede mostrar gráficos 3D o el navegador es muy antiguo. Prueba con Chrome actualizado.</p></div>`);

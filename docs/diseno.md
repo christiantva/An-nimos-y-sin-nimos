@@ -309,6 +309,7 @@ node tests/banco.mjs                 # revisa que cada reactivo tenga una sola r
 node tests/juego.mjs tactil          # partida completa con pantalla táctil (1280×800)
 node tests/juego.mjs mouse           # partida completa con mouse (1366×768)
 node tests/docente.mjs mouse         # panel docente: clave, CSV, importar/exportar, banco, ajustes, reinicio
+node tests/voz.mjs                   # voz: frases en trozos, cola sin cortes, recuperación si el motor se cuelga
 node tests/muestra.mjs               # página de muestra de personajes
 node tests/hoja-retratos.mjs         # hoja con todas las expresiones
 ```
