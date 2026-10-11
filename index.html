@@ -337,6 +337,16 @@
   .muestras.grandes button svg { width: 100%; height: 100%; }
   .muestras.grandes button small { font-size: 12px; font-weight: 700; padding: 1px 2px 3px; background: #fff; line-height: 1.1; }
   @media (max-width: 760px) { .creador-grid { grid-template-columns: 1fr; } .creador .vista .foto { width: 150px; } }
+  .mano-tuto { position: absolute; right: -26px; bottom: -40px; font-size: 52px; line-height: 1; pointer-events: none; animation: manoToca 1.1s ease-in-out infinite; filter: drop-shadow(0 2px 0 #4a2635); }
+  .mano-tuto.mantener { animation: manoMantiene 2s ease-in-out infinite; }
+  @keyframes manoToca { 0%, 100% { transform: translate(0, 0); } 45% { transform: translate(-6px, -10px) scale(.9); } }
+  @keyframes manoMantiene { 0%, 15% { transform: translate(0, 0); } 30%, 80% { transform: translate(-6px, -10px) scale(.88); } 100% { transform: translate(0, 0); } }
+  .resaltado-tuto { position: relative; z-index: 7; outline: 5px solid #ffd23f; outline-offset: 4px; box-shadow: 0 0 0 9999px rgba(20, 14, 48, .55); border-radius: 14px; }
+  .resaltado-tuto.sin-sombra { box-shadow: none; }
+  .guia ul { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 10px; text-align: left; }
+  .guia li { display: grid; grid-template-columns: 56px 1fr; gap: 12px; align-items: center; font-size: clamp(18px, 1vw + 12px, 22px); background: #fff; border: 3px solid var(--ciruela); border-radius: 14px; padding: 8px 12px; }
+  .guia li span { font-size: 34px; text-align: center; }
+  .seguir-tuto { position: absolute; z-index: 16; right: 30px; bottom: 30px; }
   .practica { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 12px 0; }
   .practica button { min-height: 110px; padding: 10px; border: 3px solid var(--ciruela); border-radius: 18px; background: #fff; font-weight: 700; font-size: 19px; display: grid; justify-items: center; gap: 4px; }
   .practica button i { width: 46px; height: 46px; border-radius: 50%; border: 3px solid var(--ciruela); }
@@ -1540,6 +1550,7 @@ function leerAlMantener(el, texto) {
       el._leido = true;
       el.classList.add('leyendo');
       Voz.decir(typeof texto === 'function' ? texto() : texto, PERSONAJES.robi.voz);
+      document.dispatchEvent(new CustomEvent('palabra-leida'));
       setTimeout(() => el.classList.remove('leyendo'), 900);
     }, 450);
   });
@@ -2045,6 +2056,7 @@ const HUD = {
       o.innerHTML = `<small>Completa la oración</small><span class="oracion">${esc(a)}<span class="hueco"></span>${esc(b ?? '')}</span>`;
     }
     if (p.tipo === 'clasificacion') o.innerHTML = `<small>${ICONO_GEMELAS} ¿Gemelas o espejo? ${ICONO_ESPEJO}</small><strong>${esc(p.par[0])} · ${esc(p.par[1])}</strong>`;
+    if (p.tipo === 'practica') o.innerHTML = `<small>${esc(p.indicacion)}</small><strong>${esc(p.palabra)}</strong>`;
     o.insertAdjacentHTML('beforeend', `<span class="oir" aria-hidden="true">${ICONO_SONIDO(true)}</span>`);
     o.setAttribute('role', 'button');
     o.setAttribute('aria-label', `${p.lectura} Toca para escuchar.`);
@@ -2962,6 +2974,7 @@ const Juego = {
     UI.cerrar();
     if (alumno.terminado) { await Menu.terminado(); return; }
     if (alumno.paso > 0 || alumno.progreso) { Motor.modoEstacion(); await escena('continuar'); }
+    else if (await Tutorial.preguntar()) await Tutorial.correr();
     await this.correr();
     await Diploma.mostrar(this.alumno);
     await Menu.terminado();
@@ -3460,6 +3473,124 @@ const Megafono = {
 };
 
 /* =====================================================================
+   16 ter. TUTORIAL: controles en el espacio real, con ROBI y una mano que señala
+   ===================================================================== */
+const Tutorial = {
+  async preguntar() {
+    Motor.modoEstacion();
+    Sonido.musica('estacion');
+    const el = UI.pantalla(`<div class="caja tarjeta" style="width:min(560px,100%)">
+      <div style="width:150px;margin:0 auto;border:4px solid #3fb6d9;outline:3px solid var(--ciruela);border-radius:16px;overflow:hidden">${retrato('robi', 'feliz', Dialogo.ctx)}</div>
+      <h2>¿Quieres jugar el tutorial?</h2>
+      <p>ROBI te enseña a jugar en un ratito.</p>
+      <div class="fila-botones">
+        <button class="boton-grande principal" data-tuto="si" style="min-width:160px">Sí</button>
+        <button class="boton-grande" data-tuto="no" style="min-width:160px">No</button>
+      </div></div>`);
+    Voz.auto('¿Quieres jugar el tutorial?', PERSONAJES.robi.voz);
+    const b = await UI.clic(el, '[data-tuto]');
+    UI.cerrar();
+    return b.dataset.tuto === 'si';
+  },
+  mano(boton, mantener = false) {
+    boton.querySelector('.mano-tuto')?.remove();
+    boton.insertAdjacentHTML('beforeend', `<span class="mano-tuto${mantener ? ' mantener' : ''}" aria-hidden="true">👆</span>`);
+  },
+  // Muestra meteoritos de práctica (sin puntos ni energía) y espera a que el alumno haga lo pedido.
+  practica({ palabra, indicacion, opciones, accion }) {
+    return new Promise((res) => {
+      const preg = { tipo: 'practica', palabra, indicacion, lectura: `${indicacion} ${palabra}.`, opciones: opciones.map((t) => ({ texto: t, ok: accion === 'tocar' && t === palabra })) };
+      HUD.objetivo(preg);
+      Voz.auto(preg.lectura, PERSONAJES.robi.voz, { encolar: true });
+      Motor.lanzarOpciones(preg);
+      const objetivo = Motor.opciones.find((a) => a.op.texto === palabra) ?? Motor.opciones[0];
+      setTimeout(() => this.mano(objetivo.div, accion === 'escuchar'), RAPIDO ? 50 : 900);
+      let seguir = null;
+      const terminar = async (a) => {
+        document.removeEventListener('palabra-leida', alLeer);
+        clearTimeout(this.reloj);
+        seguir?.remove();
+        Motor.alElegir = null;
+        if (a) { Motor.bloqueado = true; await Motor.disparar(a.grupo.position.clone()); await Motor.acierto(a); }
+        HUD.ocultarObjetivo();
+        await Motor.quitarOpciones(true);
+        Motor.bloqueado = false;
+        res();
+      };
+      const alLeer = () => { if (accion === 'escuchar') setTimeout(() => terminar(null), RAPIDO ? 50 : 1200); };
+      document.addEventListener('palabra-leida', alLeer);
+      Motor.alElegir = (a) => {
+        if (accion === 'tocar' && a.op.ok) { terminar(a); return; }
+        if (accion === 'tocar') Voz.decir(`Ese dice ${a.op.texto}. Busca ${palabra}.`, PERSONAJES.robi.voz);
+        else Voz.decir('Así lo eliges. Para escucharlo, deja el dedo quieto encima un momento.', PERSONAJES.robi.voz);
+      };
+      // Si le cuesta, aparece un botón para seguir sin quedarse trabado.
+      this.reloj = setTimeout(() => {
+        seguir = html('<button class="boton-grande seguir-tuto" id="tutoSeguir">Seguir ▶</button>');
+        seguir.addEventListener('click', () => { Sonido.efecto('click'); terminar(null); });
+        $('#app').appendChild(seguir);
+      }, RAPIDO ? 200 : 15000);
+    });
+  },
+  async resaltar(selector, lineas) {
+    const el = $(selector);
+    el?.classList.add('resaltado-tuto');
+    await escena(lineas);
+    el?.classList.remove('resaltado-tuto');
+  },
+  async correr() {
+    const a = Juego.alumno, R = (expr, texto) => ({ quien: 'robi', expr, texto });
+    Motor.modoVuelo(1, 1);
+    Sonido.musica('espacio');
+    HUD.mostrar(true);
+    HUD.corazones(CONFIG.energiaMax);
+    HUD.progreso(a);
+    HUD.escaner(CONFIG.escaneresPorPlaneta, true);
+    await escena([R('feliz', '¡Hola, cadete {nombre}! Te enseño a jugar en un ratito.'), R('normal', 'Arriba aparece lo que tienes que buscar. Abajo está nuestra nave.')]);
+    await this.practica({ palabra: 'sol', indicacion: 'Toca el meteorito que dice', opciones: ['luna', 'sol', 'mar'], accion: 'tocar' });
+    await escena([R('feliz', '¡Muy bien! Cuando tocas la palabra correcta, la nave lanza su rayo de voz.'),
+      R('normal', 'Si una palabra es difícil, deja el dedo quieto encima y te la leo. ¡Prueba!')]);
+    await this.practica({ palabra: 'gato', indicacion: 'Mantén el dedo sobre la palabra', opciones: ['gato', 'pato', 'plato'], accion: 'escuchar' });
+    await escena([R('feliz', '¡Eso es! Así puedes escuchar cualquier palabra, sin elegirla.')]);
+    HUD.objetivo({ tipo: 'practica', palabra: 'sol', indicacion: 'Toca el meteorito que dice', lectura: 'Toca el meteorito que dice sol.' });
+    await this.resaltar('#objetivo', [R('normal', 'Si quieres escuchar otra vez la pregunta, toca este cuadro de arriba.')]);
+    HUD.ocultarObjetivo();
+    await this.resaltar('#corazones', [R('normal', 'Estos corazones son tu energía. Si te equivocas, pierdes uno.'), R('feliz', 'Si se acaban, no pasa nada: volvemos a la estación a recargar.')]);
+    await this.resaltar('#btnEscaner', [R('pensativo', 'El escáner borra una respuesta incorrecta. Puedes usarlo dos veces en cada planeta.')]);
+    await this.resaltar('#cofre', [R('feliz', 'Las palabras que rescatas van a tu cofre. Tócalo para ver tu diccionario.')]);
+    await this.resaltar('#btnMenu', [R('normal', 'Con este botón pausas el juego. Tu avance siempre se guarda.')]);
+    $('.vn-botones').classList.add('resaltado-tuto', 'sin-sombra');
+    await escena([R('normal', 'Para seguir leyendo, toca este cuadro. Con los botones de al lado escuchas otra vez, saltas o ves lo que se dijo.')]);
+    $('.vn-botones').classList.remove('resaltado-tuto', 'sin-sombra');
+    await escena([R('feliz', 'En la misión buscarás palabras gemelas, que significan lo mismo, y palabras espejo, que significan lo contrario.'),
+      R('sorprendido', '¡Listo, ya sabes jugar! ¡Comencemos la misión!')]);
+    HUD.mostrar(false);
+    a.tutorialVisto = true;
+    Juego.guardar();
+  },
+  // Guía rápida (desde el menú de pausa): un resumen de los controles sin salir de la partida.
+  async guia() {
+    const m = html(`<div class="pantalla" style="z-index:46"><div class="caja tarjeta guia" style="width:min(680px,100%)">
+      <h2>¿Cómo se juega?</h2>
+      <ul>
+        <li><span>👆</span>Toca el meteorito con la palabra correcta.</li>
+        <li><span>✋</span>Deja el dedo quieto sobre una palabra para escucharla.</li>
+        <li><span>🔊</span>Toca la pregunta de arriba para oírla otra vez.</li>
+        <li><span>❤️</span>Los corazones son tu energía. Si se acaban, recargas en la estación.</li>
+        <li><span>🔍</span>El escáner borra una respuesta incorrecta (2 por planeta).</li>
+        <li><span>🧰</span>Toca el cofre para ver tu diccionario de palabras.</li>
+        <li><span>💬</span>Toca el cuadro de ROBI para seguir leyendo.</li>
+      </ul>
+      <div class="fila-botones"><button class="boton-grande principal" data-ok>¡Entendido!</button></div>
+    </div></div>`);
+    $('#app').appendChild(m);
+    Voz.auto('Toca el meteorito con la palabra correcta. Deja el dedo quieto sobre una palabra para escucharla.', PERSONAJES.robi.voz);
+    await UI.clic(m, '[data-ok]');
+    m.remove();
+  },
+};
+
+/* =====================================================================
    16 bis. DICCIONARIO DEL COFRE: las palabras rescatadas, con su oración
    ===================================================================== */
 const Diccionario = {
@@ -3633,10 +3764,12 @@ const Menu = {
       <p>Tu avance está guardado.</p>
       <div class="fila-botones" style="flex-direction:column;align-items:center">
         <button class="boton-grande principal" data-r="seguir">Continuar ▶</button>
+        <button class="boton" data-r="guia">❓ ¿Cómo se juega?</button>
         <button class="boton" data-r="salir">Salir al inicio</button>
       </div></div></div>`);
     $('#app').appendChild(m);
-    const b = await UI.clic(m, '[data-r]');
+    let b = await UI.clic(m, '[data-r]');
+    while (b.dataset.r === 'guia') { m.hidden = true; await Tutorial.guia(); m.hidden = false; b = await UI.clic(m, '[data-r]'); }
     m.remove();
     if (b.dataset.r === 'salir') { Juego.guardar(); Voz.callar(); location.reload(); return; }
     Motor.pausar(estaba);

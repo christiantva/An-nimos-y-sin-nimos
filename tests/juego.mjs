@@ -35,6 +35,7 @@ await tocar('[data-ok]');
 const avatarGuardado = await p.evaluate(() => window.MP.Juego.alumno?.avatar ?? JSON.parse(localStorage.getItem('mp:v1:alumnos'))['maria nahui'].avatar);
 if (avatarGuardado?.peinado !== 'erizo' || avatarGuardado?.extra !== 'lentes' || avatarGuardado?.piel !== '#8d5a3b') errores.push(`Avatar no guardado: ${JSON.stringify(avatarGuardado)}`);
 
+let tutorial = null, tutorialEscucho = false;
 let errAPropósito = { p1: 0, p3: 0 }, escanerUsado = false, recargado = false, reparoVisto = false, pasos = 0;
 const t0 = Date.now();
 let ultimoLog = 0;
@@ -54,6 +55,17 @@ while (pasos++ < 6000 && Date.now() - t0 < 25 * 60000) {
     if (!despues || despues.paso !== antes) errores.push(`Progreso no recuperado tras recargar: antes ${antes}, después ${JSON.stringify(despues)}`);
     continue;
   }
+  if (await visible('[data-tuto]')) { await foto('01b-tutorial-pregunta'); await tocar(`[data-tuto="${tactil ? 'si' : 'no'}"]`); tutorial = tactil ? 'sí' : 'no'; continue; }
+  if (await visible('.mano-tuto.mantener')) {
+    await p.waitForTimeout(400);
+    await foto('01d-tutorial-escuchar');
+    const caja = await p.locator('.etiqueta:has(.mano-tuto)').first().boundingBox().catch(() => null);
+    if (caja) { await p.mouse.move(caja.x + caja.width / 2, caja.y + caja.height / 2); await p.mouse.down(); await p.waitForTimeout(800); await p.mouse.up(); tutorialEscucho = true; }
+    await p.waitForTimeout(300);
+    continue;
+  }
+  if (await visible('.resaltado-tuto')) await foto('01e-tutorial-resaltado');
+  if (await visible('.mano-tuto:not(.mantener)')) await foto('01c-tutorial-tocar');
   if (await visible('#vn:not(.oculta)')) {
     if (await visible('#vnOpciones button')) { await foto('05-eleccion'); await tocar('#vnOpciones button'); }
     else { await tocar('#vnMarco'); }
@@ -122,6 +134,6 @@ await tocar('[data-tab="ajustes"]');
 await foto('20-docente-ajustes');
 
 await navegador.close();
-const resumen = { modo, minutos, final, extras, errAPropósito, escanerUsado, recargado, reparoVisto, claveMala, csvOk, primeraLineaCSV: csv.split('\r\n')[0].slice(1, 120), filaAlumno: csv.split('\r\n')[1]?.slice(0, 200), errores };
+const resumen = { modo, minutos, final, tutorial, tutorialEscucho, extras, errAPropósito, escanerUsado, recargado, reparoVisto, claveMala, csvOk, primeraLineaCSV: csv.split('\r\n')[0].slice(1, 120), filaAlumno: csv.split('\r\n')[1]?.slice(0, 200), errores };
 console.log(JSON.stringify(resumen, null, 2));
-process.exit(!final?.terminado || !csvOk || !reparoVisto || errores.length ? 1 : 0);
+process.exit(!final?.terminado || !csvOk || !reparoVisto || !tutorial || (tactil && !tutorialEscucho) || errores.length ? 1 : 0);
