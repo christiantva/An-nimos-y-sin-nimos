@@ -124,6 +124,9 @@
   .objetivo strong { display: block; font-size: clamp(32px, 3vw + 14px, 52px); line-height: 1.1; letter-spacing: .02em; }
   .objetivo .oracion { display: block; font-size: clamp(24px, 1.8vw + 12px, 34px); font-weight: 700; line-height: 1.3; }
   .objetivo .hueco { display: inline-block; min-width: 3.2em; border-bottom: 4px solid var(--ciruela); margin: 0 .15em; }
+  .objetivo { position: relative; cursor: pointer; }
+  .objetivo .oir { position: absolute; right: -14px; top: -14px; width: 40px; height: 40px; border-radius: 50%; background: #ffd6e0; border: 3px solid var(--ciruela); display: grid; place-items: center; }
+  .objetivo .oir svg { width: 24px; height: 24px; }
   .objetivo.gemela { border-color: #c2186b; }
   .objetivo.espejo { border-color: #1f5fa8; }
 
@@ -147,6 +150,7 @@
     transition: opacity .3s, background .3s;
   }
   .etiqueta:active { transform: translateY(3px); }
+  .etiqueta.leyendo, .reparar-grid button.leyendo { outline: 5px solid #ffd23f; outline-offset: 2px; }
   .etiqueta.ok { background: #c8f5d8; box-shadow: inset 0 0 0 4px #7fdca2, 0 5px 0 var(--ciruela); }
   .etiqueta.mal { background: #e4e0e8; color: #6d6680; }
   .etiqueta.apagada { opacity: 0; pointer-events: none; }
@@ -286,6 +290,8 @@
   .muestras button svg { width: 34px; height: 34px; }
   .muestras button[aria-pressed="true"] { outline: 5px solid #ff8a3d; }
   .muestras button:disabled { opacity: .35; cursor: default; }
+  .muestras[data-grupo="robi"] button { width: 72px; height: 72px; padding: 0; overflow: hidden; }
+  .muestras[data-grupo="robi"] button svg { width: 100%; height: 100%; }
   .muestras button:disabled::after { content: "🔒"; position: absolute; right: -8px; bottom: -8px; font-size: 18px; }
 
   /* ---------- Minijuegos ---------- */
@@ -310,6 +316,15 @@
   .llaves button svg { width: 70px; height: 70px; }
   .llaves button.puesta { visibility: hidden; }
 
+  .diccionario { width: min(860px, 100%); max-height: calc(100% - 8px); display: flex; flex-direction: column; text-align: left; }
+  .diccionario .pestanas-dicc { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 4px 0 10px; }
+  .diccionario ul { list-style: none; margin: 0; padding: 0; overflow: auto; display: grid; gap: 10px; }
+  .diccionario li { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px 14px; background: #fff; border: 3px solid var(--ciruela); border-radius: 14px; }
+  .diccionario li b { font-size: clamp(22px, 1.4vw + 12px, 30px); display: block; }
+  .diccionario li span { font-size: 18px; color: var(--ciruela-suave); }
+  .diccionario li button { width: 54px; height: 54px; border-radius: 50%; border: 3px solid var(--ciruela); background: #ffd6e0; display: grid; place-items: center; }
+  .diccionario li button svg { width: 28px; height: 28px; }
+  .diccionario .vacio { text-align: center; font-size: 19px; color: var(--ciruela-suave); padding: 20px; }
   .practica { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 12px 0; }
   .practica button { min-height: 110px; padding: 10px; border: 3px solid var(--ciruela); border-radius: 18px; background: #fff; font-weight: 700; font-size: 19px; display: grid; justify-items: center; gap: 4px; }
   .practica button i { width: 46px; height: 46px; border-radius: 50%; border: 3px solid var(--ciruela); }
@@ -400,10 +415,10 @@
     <div class="hud-der">
       <div class="caja galaxia">Galaxia <div class="barra"><i id="barraGalaxia"></i></div></div>
       <div class="fila">
-        <div class="caja cofre" id="cofre" title="Cofre de palabras">
+        <button class="caja cofre" id="cofre" title="Mi diccionario de palabras" aria-label="Abrir mi diccionario de palabras">
           <svg viewBox="0 0 32 32"><rect x="3" y="12" width="26" height="16" rx="3" fill="#c98a3f" stroke="#4a2635" stroke-width="2.4"/><path d="M3 14q0-9 13-9t13 9z" fill="#e0a85a" stroke="#4a2635" stroke-width="2.4"/><rect x="13" y="13" width="6" height="7" rx="1.5" fill="#ffd23f" stroke="#4a2635" stroke-width="2"/></svg>
           <b id="numCofre">0</b>
-        </div>
+        </button>
         <div class="caja puntos"><b id="numPuntos">0</b>&nbsp;pts</div>
         <button class="caja hud-btn redondo" id="btnSonidoHud" aria-label="Silenciar o activar el sonido"></button>
         <button class="caja hud-btn redondo" id="btnMenu" aria-label="Menú">
@@ -603,7 +618,27 @@ const BANCO_ORIGINAL = /*BANCO_INICIO*/{
     { "id": "o17", "nivel": 3, "texto": "El maestro preguntó cuánto es dos más dos y Luis ___: «¡Cuatro!».", "correcta": "respondió", "distractores": ["preguntó", "durmió"] },
     { "id": "o18", "nivel": 3, "texto": "El bebé tenía hambre y empezó a ___.", "correcta": "llorar", "distractores": ["reír", "volar"] },
     { "id": "o19", "nivel": 3, "texto": "El elefante es ___, ¡mucho más grande que una casa!", "correcta": "enorme", "distractores": ["pequeño", "liviano"] },
-    { "id": "o20", "nivel": 3, "texto": "Mi hermanito se cayó, pero no lloró. ¡Es muy ___!", "correcta": "valiente", "distractores": ["miedoso", "ruidoso"] }
+    { "id": "o20", "nivel": 3, "texto": "Mi hermanito se cayó, pero no lloró. ¡Es muy ___!", "correcta": "valiente", "distractores": ["miedoso", "ruidoso"] },
+    { "id": "o21", "nivel": 1, "texto": "El hielo está muy ___, no lo tengas mucho rato en la mano.", "correcta": "frío", "distractores": ["caliente", "dulce"] },
+    { "id": "o22", "nivel": 1, "texto": "La hormiga es muy ___, casi no se ve.", "correcta": "pequeña", "distractores": ["grande", "ruidosa"] },
+    { "id": "o23", "nivel": 1, "texto": "Apaga la luz, ya es hora de ___.", "correcta": "dormir", "distractores": ["despertar", "almorzar"] },
+    { "id": "o24", "nivel": 1, "texto": "El globo subió muy ___, hasta las nubes.", "correcta": "alto", "distractores": ["bajo", "mojado"] },
+    { "id": "o25", "nivel": 1, "texto": "Tengo mucha sed, quiero ___ agua.", "correcta": "tomar", "distractores": ["comer", "dormir"] },
+    { "id": "o26", "nivel": 1, "texto": "Mi hermana ganó la carrera y está muy ___.", "correcta": "feliz", "distractores": ["triste", "dormida"] },
+    { "id": "o27", "nivel": 1, "texto": "La tienda está ___: no hay nadie adentro.", "correcta": "vacía", "distractores": ["llena", "mojada"] },
+    { "id": "o28", "nivel": 2, "texto": "Sacamos la ropa al sol para que esté ___.", "correcta": "seca", "distractores": ["mojada", "sucia"] },
+    { "id": "o29", "nivel": 2, "texto": "El camino es muy ___: solo cabe una persona.", "correcta": "angosto", "distractores": ["ancho", "alegre"] },
+    { "id": "o30", "nivel": 2, "texto": "Mi abuelo es muy ___: comparte su comida con todos.", "correcta": "generoso", "distractores": ["egoísta", "ruidoso"] },
+    { "id": "o31", "nivel": 2, "texto": "La pluma es tan ___ que el viento se la lleva.", "correcta": "liviana", "distractores": ["pesada", "triste"] },
+    { "id": "o32", "nivel": 2, "texto": "El examen fue muy ___ y todos sacaron buena nota.", "correcta": "fácil", "distractores": ["difícil", "oscuro"] },
+    { "id": "o33", "nivel": 2, "texto": "El caracol avanza muy ___, sin ningún apuro.", "correcta": "despacio", "distractores": ["rápido", "alto"] },
+    { "id": "o34", "nivel": 2, "texto": "Por la noche, el cielo se pone ___.", "correcta": "oscuro", "distractores": ["claro", "caliente"] },
+    { "id": "o35", "nivel": 3, "texto": "Si a cinco le ___ dos, quedan tres.", "correcta": "restas", "distractores": ["sumas", "pintas"] },
+    { "id": "o36", "nivel": 3, "texto": "Mi primo no dice mentiras: siempre dice la ___.", "correcta": "verdad", "distractores": ["mentira", "tarea"] },
+    { "id": "o37", "nivel": 3, "texto": "Luis tenía fiebre porque estaba ___.", "correcta": "enfermo", "distractores": ["sano", "contento"] },
+    { "id": "o38", "nivel": 3, "texto": "La biblioteca es un lugar ___: nadie grita.", "correcta": "silencioso", "distractores": ["ruidoso", "mojado"] },
+    { "id": "o39", "nivel": 3, "texto": "Mi mamá ___ pan en la panadería y paga con monedas.", "correcta": "compra", "distractores": ["vende", "duerme"] },
+    { "id": "o40", "nivel": 3, "texto": "Llegué ___ al colegio y la clase ya había empezado.", "correcta": "tarde", "distractores": ["temprano", "alto"] }
   ]
 }/*BANCO_FIN*/;
 
@@ -646,6 +681,7 @@ const GUION = {
     { quien: 'tika', expr: 'triste', texto: 'Yo digo RÁPIDO… ¡y Taka ya no sabe qué decir!' },
     { quien: 'taka', expr: 'pensativo', texto: 'La nebulosa se comió nuestras palabras gemelas.' },
     { quien: 'robi', expr: 'feliz', texto: 'Las gemelas significan lo mismo. ¡Toca el meteorito con la palabra gemela!' },
+    { quien: 'robi', expr: 'normal', texto: '¿Una palabra difícil? Mantén el dedo sobre ella y te la leo.' },
   ],
   jefe1: [
     { quien: 'copion', expr: 'normal', texto: '¡Alto ahí! Soy Copión, el experto en gemelas.' },
@@ -1097,9 +1133,17 @@ function robi(e, o = {}) {
       ojos = pill(80) + pill(120);
       bo = `<path d="M90 114 Q100 122 110 114" ${st}/>`;
   }
-  const conChullo = o.accesorio === 'chullo';
+  const acc = o.accesorio, conChullo = acc === 'chullo';
+  const antena = conChullo ? '' : `<path d="M100 48 L100 26" ${T(3)}/>` + (acc === 'flor' ? flor(100, 19, '#ff7eb3', 7) : `<circle cx="100" cy="21" r="8" fill="#ff7aa8" ${T()}/>`);
+  const bufanda = acc !== 'bufanda' ? '' : `<path d="M56 146 Q100 162 144 146 L146 160 Q100 176 54 160 Z" fill="#ff6b8b" ${T(2.2)}/>`
+    + `<path d="M70 152 l4 12 M86 156 l3 12 M114 156 l-3 12 M130 152 l-4 12" stroke="#fff" stroke-width="3" opacity=".8"/>`
+    + `<path d="M118 160 L134 160 L138 196 L122 196 Z" fill="#ff6b8b" ${T(2.2)}/><path d="M121 172 L136 172 M122 184 L137 184" stroke="#fff" stroke-width="3" opacity=".8"/>`
+    + `<path d="M123 196 l-1 6 M128 196 l0 6 M133 196 l1 6" ${T(2)}/>`;
+  const lentes = acc !== 'lentes' ? '' : `<rect x="64" y="80" width="30" height="22" rx="9" fill="#ff7aa8" fill-opacity=".6" ${T(3)}/>`
+    + `<rect x="106" y="80" width="30" height="22" rx="9" fill="#ff7aa8" fill-opacity=".6" ${T(3)}/><path d="M94 88 Q100 84 106 88" fill="none" ${T(3)}/>`
+    + `<path d="M70 86 L78 84" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><path d="M112 86 L120 84" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>`;
   return lienzo('#d9f3fb',
-    (conChullo ? '' : `<path d="M100 48 L100 26" ${T(3)}/><circle cx="100" cy="21" r="8" fill="#ff7aa8" ${T()}/>`)
+    antena
     + `<rect x="60" y="156" width="80" height="56" rx="22" fill="#c4e9f5" ${T()}/>`
     + `<path d="${corazon(100, 180, 9)}" fill="#ff7aa8" ${T(1.6)}/>`
     + `<rect x="88" y="144" width="24" height="16" rx="4" fill="#a7d8ea" ${T()}/>`
@@ -1109,6 +1153,7 @@ function robi(e, o = {}) {
     + `<path d="M62 72 Q66 66 74 66" stroke="#fff" stroke-width="3" opacity=".35" fill="none" stroke-linecap="round"/>`
     + `<rect x="60" y="108" width="12" height="6" rx="3" fill="#ff8fb8" opacity=".75"/><rect x="128" y="108" width="12" height="6" rx="3" fill="#ff8fb8" opacity=".75"/>`
     + `<g filter="url(#brillo)">${ojos}${bo}${extra}</g>`
+    + lentes + bufanda
     + (conChullo ? chullo(44, 156, 14, 64) : ''));
 }
 
@@ -1367,6 +1412,20 @@ const COLORES_NAVE = [
   { id: 'lila', color: '#b48cff', minEstrellas: 6 },
   { id: 'naranja', color: '#ff9f43', minEstrellas: 9 },
 ];
+const ACCESORIOS = [
+  { id: null, nombre: 'Sin accesorio', desde: 0 },
+  { id: 'flor', nombre: 'Flor en la antena', desde: 1 },
+  { id: 'chullo', nombre: 'Chullo', desde: 2 },
+  { id: 'bufanda', nombre: 'Bufanda', desde: 3 },
+  { id: 'lentes', nombre: 'Lentes de estrella', desde: 4 },
+];
+const ESTELAS = [
+  { id: 'fuego', nombre: 'Fuego', colores: ['#ffb23f', '#ffd23f', '#ff7aa8'], minEstrellas: 0 },
+  { id: 'hielo', nombre: 'Hielo', colores: ['#7ff6ff', '#ffffff', '#9fc4e8'], minEstrellas: 3 },
+  { id: 'dulce', nombre: 'Algodón dulce', colores: ['#ff9fd2', '#ffd6f0', '#b07cff'], minEstrellas: 6 },
+  { id: 'oro', nombre: 'Oro', colores: ['#ffd23f', '#fff3a8', '#ffffff'], minEstrellas: 9 },
+  { id: 'arcoiris', nombre: 'Arcoíris', colores: ['#ff7aa8', '#ffd23f', '#7fdca2', '#7ff6ff', '#b07cff'], minEstrellas: 12 },
+];
 const CALCOMANIAS = [
   { id: 'estrella', nombre: 'Estrella', color: '#ffd23f', desde: 1 },
   { id: 'corazon', nombre: 'Corazón', color: '#ff6b8b', desde: 1 },
@@ -1413,6 +1472,29 @@ function barajar(a) {
   for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; }
   return r;
 }
+// Mantener presionado (táctil o mouse) lee la palabra en voz alta sin elegirla.
+function leerAlMantener(el, texto) {
+  let t = 0;
+  const cancelar = () => clearTimeout(t);
+  el.addEventListener('pointerdown', () => {
+    el._leido = false;
+    cancelar();
+    t = setTimeout(() => {
+      el._leido = true;
+      el.classList.add('leyendo');
+      Voz.decir(typeof texto === 'function' ? texto() : texto, PERSONAJES.robi.voz);
+      setTimeout(() => el.classList.remove('leyendo'), 900);
+    }, 450);
+  });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => el.addEventListener(ev, cancelar));
+  el.addEventListener('contextmenu', (e) => e.preventDefault());
+}
+// true si el toque terminó en lectura (entonces no cuenta como elección).
+function fueLectura(el) {
+  if (!el?._leido) return false;
+  el._leido = false;
+  return true;
+}
 function html(cadena) {
   const t = document.createElement('template');
   t.innerHTML = cadena.trim();
@@ -1449,7 +1531,8 @@ function alumnoNuevo(nombre, avatar) {
     paso: 0, energia: CONFIG.energiaMax, progreso: null, planetas: {},
     stats: { sinonimo: { a: 0, e: 0 }, antonimo: { a: 0, e: 0 }, oracion: { a: 0, e: 0 }, clasificacion: { a: 0, e: 0 } },
     fallos: {}, insignias: [], llaves: [], palabras: [], puntos: 0, racha: 0, mejorRacha: 0,
-    nave: { color: COLORES_NAVE[0].color, calcomanias: [] }, robiAccesorio: null, terminado: false,
+    nave: { color: COLORES_NAVE[0].color, calcomanias: [], estela: 'fuego' }, robiAccesorio: null, terminado: false,
+    vistos: {}, rescatadas: [],
   };
 }
 const Alumnos = {
@@ -1898,13 +1981,17 @@ const HUD = {
   objetivo(p) {
     const o = $('#objetivo');
     o.className = 'caja objetivo';
-    if (p.tipo === 'sinonimo') { o.classList.add('gemela'); o.innerHTML = `<small>${ICONO_GEMELAS} Palabra gemela de</small><strong>${esc(p.item.palabra)}</strong>`; }
-    if (p.tipo === 'antonimo') { o.classList.add('espejo'); o.innerHTML = `<small>${ICONO_ESPEJO} Palabra espejo de</small><strong>${esc(p.item.palabra)}</strong>`; }
+    if (p.tipo === 'sinonimo') { o.classList.add('gemela'); o.innerHTML = `<small>${ICONO_GEMELAS} Palabra gemela de</small><strong>${esc(p.palabra)}</strong>`; }
+    if (p.tipo === 'antonimo') { o.classList.add('espejo'); o.innerHTML = `<small>${ICONO_ESPEJO} Palabra espejo de</small><strong>${esc(p.palabra)}</strong>`; }
     if (p.tipo === 'oracion') {
       const [a, b] = p.item.texto.split('___');
       o.innerHTML = `<small>Completa la oración</small><span class="oracion">${esc(a)}<span class="hueco"></span>${esc(b ?? '')}</span>`;
     }
     if (p.tipo === 'clasificacion') o.innerHTML = `<small>${ICONO_GEMELAS} ¿Gemelas o espejo? ${ICONO_ESPEJO}</small><strong>${esc(p.par[0])} · ${esc(p.par[1])}</strong>`;
+    o.insertAdjacentHTML('beforeend', `<span class="oir" aria-hidden="true">${ICONO_SONIDO(true)}</span>`);
+    o.setAttribute('role', 'button');
+    o.setAttribute('aria-label', `${p.lectura} Toca para escuchar.`);
+    o.onclick = () => Voz.decir(p.lectura, PERSONAJES.robi.voz);
     o.hidden = false;
   },
   ocultarObjetivo() { $('#objetivo').hidden = true; },
@@ -2119,6 +2206,8 @@ const Motor = {
   },
   pintarNave(nave) {
     this.matNave.color.set(nave?.color ?? COLORES_NAVE[0].color);
+    this.coloresEstela = (ESTELAS.find((e) => e.id === nave?.estela) ?? ESTELAS[0]).colores;
+    this.llama.material.color.set(this.coloresEstela[0]);
     this.calcos.clear();
     const lugares = [[-.75, .05, .22, .5], [.75, .05, .22, .5], [0, .43, .42, .36]];
     (nave?.calcomanias ?? []).slice(0, 3).forEach((id, i) => {
@@ -2263,7 +2352,8 @@ const Motor = {
     b.className = clase;
     b.textContent = texto;
     if (DEBUG && op) b.dataset.ok = op.ok ? '1' : '0';
-    if (a) b.addEventListener('click', (ev) => { ev.stopPropagation(); this.elegir(a); });
+    leerAlMantener(b, () => b.textContent.trim());
+    if (a) b.addEventListener('click', (ev) => { ev.stopPropagation(); if (!fueLectura(b)) this.elegir(a); });
     return b;
   },
   lanzarPortales(preg) {
@@ -2647,8 +2737,9 @@ const Motor = {
     else this.nave.rotation.z *= 1 - Math.min(1, 3 * dt);
     this.nave.position.y = this.naveY + Math.sin(t * 2) * .07;
     this.llama.scale.set(1, 1 + Math.sin(t * 8) * .12, 1);
-    if (this.modo === 'vuelo' && !this.pausado && (!this.calidadBaja || Math.floor(t * 60) % 2)) {
-      this.emitir(this.nave.position.clone().add(V3(0, 0, 1.5)), 1, ['#ffb23f', '#ffd23f', '#ff7aa8'], { vida: .35, dir: V3(0, 0, 3) });
+    if ((this.modo === 'vuelo' || this.modo === 'estacion') && !this.pausado && (!this.calidadBaja || Math.floor(t * 60) % 2)) {
+      const cola = V3(0, 0, 1.3).applyQuaternion(this.nave.quaternion).multiplyScalar(this.nave.scale.x);
+      this.emitir(this.nave.position.clone().add(cola), 1, this.coloresEstela ?? ESTELAS[0].colores, { vida: .35, dir: cola.clone().normalize().multiplyScalar(3) });
     }
     if (!this.pausado) this.opciones.forEach((a) => this.moverOpcion(a, dt, t));
     this.opciones.forEach((a) => a.cara?.lookAt(this.camara.position));
@@ -2702,14 +2793,21 @@ const Preguntas = {
     if (!it?.correcta || !(it.distractores ?? []).filter(Boolean).length) return false;
     return tipo === 'oracion' ? String(it.texto ?? '').includes('___') : !!it.palabra;
   },
+  // Entre los candidatos, elige al azar uno de los que este alumno ha visto menos veces.
   elegir(tipo, nivel, usados) {
+    const vistos = Juego.alumno?.vistos ?? {};
     const lista = this.lista(tipo).filter((x) => this.utilizable(tipo, x) && !usados.has(x.id));
     if (!lista.length) return null;
+    const menosVisto = (c) => {
+      const min = Math.min(...c.map((x) => vistos[x.id] ?? 0));
+      const r = c.filter((x) => (vistos[x.id] ?? 0) === min);
+      return r[Math.floor(Math.random() * r.length)];
+    };
     for (const n of [nivel, nivel + 1, nivel - 1, nivel + 2, nivel - 2]) {
       const c = lista.filter((x) => Number(x.nivel) === n);
-      if (c.length) return c[Math.floor(Math.random() * c.length)];
+      if (c.length) return menosVisto(c);
     }
-    return lista[Math.floor(Math.random() * lista.length)];
+    return menosVisto(lista);
   },
   armar(n, fase) {
     const P = PLANETAS[n], usados = new Set(), niveles = NIVELES[n === 5 ? 'final' : fase];
@@ -2725,7 +2823,8 @@ const Preguntas = {
       const it = this.elegir(origen ?? tipo, nv, usados);
       if (!it) return;
       usados.add(it.id);
-      refs.push({ tipo, id: it.id });
+      // Las gemelas se pueden preguntar en los dos sentidos (alegre → contento o contento → alegre).
+      refs.push({ tipo, id: it.id, inv: (tipo === 'sinonimo' || tipo === 'clasificacion') && Math.random() < .5 });
     });
     return refs;
   },
@@ -2733,7 +2832,7 @@ const Preguntas = {
     if (ref.tipo === 'clasificacion') {
       const b = this.buscar(ref.id);
       if (!b || b.tipo === 'oracion' || !b.item.palabra || !b.item.correcta) return null;
-      const gem = b.tipo === 'sinonimo', par = [b.item.palabra, b.item.correcta];
+      const gem = b.tipo === 'sinonimo', par = ref.inv ? [b.item.correcta, b.item.palabra] : [b.item.palabra, b.item.correcta];
       return {
         tipo: 'clasificacion', ref, item: b.item, par, esGemela: gem,
         opciones: [{ texto: 'gemelas', ok: gem }, { texto: 'espejo', ok: !gem }],
@@ -2743,22 +2842,25 @@ const Preguntas = {
     }
     const it = this.lista(ref.tipo).find((x) => x.id === ref.id);
     if (!this.utilizable(ref.tipo, it)) return null;
+    // Solo las gemelas se invierten: en los espejos, los distractores «trampa» serían respuestas válidas.
+    const inv = ref.tipo === 'sinonimo' && ref.inv;
+    const palabra = inv ? it.correcta : it.palabra, respuesta = inv ? it.palabra : it.correcta;
     const nDis = ref.tipo === 'oracion' ? 2 : (Number(it.nivel) <= 1 ? 2 : 3);
-    const dis = barajar([...new Set(it.distractores.filter((d) => d && d !== it.correcta))]).slice(0, nDis);
-    const opciones = barajar([{ texto: it.correcta, ok: true }, ...dis.map((d) => ({ texto: d, ok: false }))]);
+    const dis = barajar([...new Set(it.distractores.filter((d) => d && normalizar(d) !== normalizar(respuesta) && normalizar(d) !== normalizar(palabra ?? '')))]).slice(0, nDis);
+    const opciones = barajar([{ texto: respuesta, ok: true }, ...dis.map((d) => ({ texto: d, ok: false }))]);
     const lectura = {
-      sinonimo: `¿Cuál es la palabra gemela de ${it.palabra}?`,
-      antonimo: `¿Cuál es la palabra espejo de ${it.palabra}?`,
+      sinonimo: `¿Cuál es la palabra gemela de ${palabra}?`,
+      antonimo: `¿Cuál es la palabra espejo de ${palabra}?`,
       oracion: `Completa la oración: ${String(it.texto).replace('___', '...')}`,
     }[ref.tipo];
-    return { tipo: ref.tipo, ref, item: it, opciones, lectura, clave: ref.tipo === 'oracion' ? it.correcta : it.palabra };
+    return { tipo: ref.tipo, ref, item: it, palabra, respuesta, opciones, lectura, clave: ref.tipo === 'oracion' ? it.correcta : it.palabra };
   },
   explicacion(p) {
     const ej = (e) => (e ? ` Por ejemplo: «${e}»` : '');
     const it = p.item;
     let texto;
-    if (p.tipo === 'sinonimo') texto = `¡Casi! La gemela de ${mayus(it.palabra)} es ${mayus(it.correcta)}: significan lo mismo.${ej(it.ejemplo)}`;
-    if (p.tipo === 'antonimo') texto = `¡Casi! El espejo de ${mayus(it.palabra)} es ${mayus(it.correcta)}: significan lo contrario.${ej(it.ejemplo)}`;
+    if (p.tipo === 'sinonimo') texto = `¡Casi! La gemela de ${mayus(p.palabra)} es ${mayus(p.respuesta)}: significan lo mismo.${ej(it.ejemplo)}`;
+    if (p.tipo === 'antonimo') texto = `¡Casi! El espejo de ${mayus(p.palabra)} es ${mayus(p.respuesta)}: significan lo contrario.${ej(it.ejemplo)}`;
     if (p.tipo === 'oracion') texto = `¡Casi! La palabra que encaja es ${mayus(it.correcta)}: «${String(it.texto).replace('___', it.correcta)}»`;
     if (p.tipo === 'clasificacion') {
       texto = p.esGemela
@@ -2793,6 +2895,10 @@ const Juego = {
     Dialogo.ctx = { nombre: a.nombre, avatar: a.avatar, accesorio: a.robiAccesorio };
   },
   async entrar(alumno) {
+    // Datos agregados en versiones nuevas (las partidas guardadas antes no los tienen).
+    alumno.vistos ??= {};
+    alumno.rescatadas ??= [];
+    alumno.nave.estela ??= 'fuego';
     this.alumno = alumno;
     this.actualizarCtx();
     Motor.pintarNave(alumno.nave);
@@ -2906,6 +3012,7 @@ const Juego = {
       const ref = prog.cola[prog.i];
       const preg = Preguntas.crear(ref);
       if (!preg) { prog.i++; if (prog.i > 200) break; continue; }
+      this.alumno.vistos[ref.id] = (this.alumno.vistos[ref.id] ?? 0) + 1;
       const ok = await this.preguntar(preg, tipoFase);
       this.registrar(preg, ok);
       if (ok) {
@@ -2990,6 +3097,7 @@ const Juego = {
       if (a.racha >= 5) this.insignia('racha5');
       const w = preg.tipo === 'clasificacion' ? `${preg.par[0]} · ${preg.par[1]}` : preg.opciones.find((o) => o.ok).texto;
       if (!a.palabras.includes(w)) a.palabras.push(w);
+      if (!a.rescatadas.includes(preg.item.id)) a.rescatadas.push(preg.item.id);
     } else {
       a.racha = 0;
       a.fallos[preg.clave] = (a.fallos[preg.clave] ?? 0) + 1;
@@ -3140,9 +3248,10 @@ const Recompensas = {
     this.sonado = false;
     for (;;) {
       const el = this.pintar(n);
-      const b = await UI.clic(el, '[data-continuar], [data-reto]');
+      const b = await UI.clic(el, '[data-continuar], [data-reto], [data-dicc]');
       if (b.matches('[data-continuar]')) break;
-      await Reparar.jugar('reto');
+      if (b.matches('[data-dicc]')) await Diccionario.abrir();
+      else await Reparar.jugar('reto');
     }
   },
   pintar(n) {
@@ -3159,13 +3268,13 @@ const Recompensas = {
         <div class="muestras" data-grupo="color">${COLORES_NAVE.map((c) => `<button data-color="${c.color}" aria-label="Color ${c.id}${total < c.minEstrellas ? `, se desbloquea con ${c.minEstrellas} estrellas` : ''}" aria-pressed="${a.nave.color === c.color}" ${total < c.minEstrellas ? 'disabled' : ''} style="background:${c.color}"></button>`).join('')}</div>
         <h3>Calcomanías <small style="font-weight:400">(elige hasta 3)</small></h3>
         <div class="muestras" data-grupo="calco">${CALCOMANIAS.map((c) => `<button data-calco="${c.id}" aria-label="${esc(c.nombre)}" aria-pressed="${a.nave.calcomanias.includes(c.id)}" ${n < c.desde ? 'disabled' : ''}>${calcomaniaSVG(c.id)}</button>`).join('')}</div>
+        <h3>Estela de la nave</h3>
+        <div class="muestras" data-grupo="estela">${ESTELAS.map((e) => `<button data-estela="${e.id}" aria-label="Estela ${esc(e.nombre)}${total < e.minEstrellas ? `, se desbloquea con ${e.minEstrellas} estrellas` : ''}" aria-pressed="${(a.nave.estela ?? 'fuego') === e.id}" ${total < e.minEstrellas ? 'disabled' : ''} style="background:linear-gradient(135deg,${e.colores.join(',')})"></button>`).join('')}</div>
         <h3>Accesorio de ROBI</h3>
-        <div class="muestras" data-grupo="robi">
-          <button data-acc="" aria-label="Sin accesorio" aria-pressed="${!a.robiAccesorio}">${robi('feliz')}</button>
-          <button data-acc="chullo" aria-label="Chullo" aria-pressed="${a.robiAccesorio === 'chullo'}" ${n < 2 ? 'disabled' : ''}>${robi('feliz', { accesorio: 'chullo' })}</button>
-        </div>
+        <div class="muestras" data-grupo="robi">${ACCESORIOS.map((x) => `<button data-acc="${x.id ?? ''}" aria-label="${esc(x.nombre)}${n < x.desde ? ', se desbloquea más adelante' : ''}" aria-pressed="${(a.robiAccesorio ?? null) === x.id}" ${n < x.desde ? 'disabled' : ''}>${robi('feliz', { accesorio: x.id })}</button>`).join('')}</div>
       </div>
       <div class="fila-botones">
+        <button class="boton" data-dicc>📖 Mi diccionario</button>
         <button class="boton" data-reto>🔧 Reto: reparar la nave</button>
         <button class="boton-grande principal" data-continuar>Continuar misión ▶</button>
       </div>
@@ -3177,6 +3286,7 @@ const Recompensas = {
       if (!b || b.disabled) return;
       Sonido.efecto('click');
       if (b.dataset.color) a.nave.color = b.dataset.color;
+      if (b.dataset.estela) a.nave.estela = b.dataset.estela;
       if (b.dataset.calco) {
         const lista = a.nave.calcomanias, id = b.dataset.calco;
         if (lista.includes(id)) lista.splice(lista.indexOf(id), 1);
@@ -3186,6 +3296,7 @@ const Recompensas = {
       Motor.pintarNave(a.nave);
       Juego.guardar();
       el.querySelectorAll('[data-color]').forEach((x) => x.setAttribute('aria-pressed', x.dataset.color === a.nave.color));
+      el.querySelectorAll('[data-estela]').forEach((x) => x.setAttribute('aria-pressed', x.dataset.estela === a.nave.estela));
       el.querySelectorAll('[data-calco]').forEach((x) => x.setAttribute('aria-pressed', a.nave.calcomanias.includes(x.dataset.calco)));
       el.querySelectorAll('[data-acc]').forEach((x) => x.setAttribute('aria-pressed', (x.dataset.acc || null) === a.robiAccesorio));
     });
@@ -3228,6 +3339,7 @@ const Reparar = {
       <div class="reparar-grid">${fichas.map((x, i) => `<button data-i="${i}" aria-pressed="false"${x.t.length > 9 ? ' class="larga"' : ''}>${esc(x.t)}</button>`).join('')}</div>
       <div class="fila-botones" data-fin hidden><button class="boton-grande principal" data-ok>¡Nave reparada! Continuar ▶</button></div>
     </div>`);
+    el.querySelectorAll('[data-i]').forEach((b) => leerAlMantener(b, fichas[b.dataset.i].t));
     Voz.auto(instruccion, PERSONAJES.robi.voz, { encolar: true });
     let sel = null, unidas = 0;
     await new Promise((res) => {
@@ -3235,7 +3347,7 @@ const Reparar = {
         const b = ev.target.closest('button');
         if (!b) return;
         if (b.matches('[data-ok]')) { Sonido.efecto('click'); res(); return; }
-        if (b.dataset.i === undefined || b.classList.contains('unida')) return;
+        if (b.dataset.i === undefined || b.classList.contains('unida') || fueLectura(b)) return;
         if (!sel) { sel = b; b.setAttribute('aria-pressed', 'true'); Sonido.efecto('click'); return; }
         if (sel === b) { b.setAttribute('aria-pressed', 'false'); sel = null; return; }
         const x = fichas[sel.dataset.i], y = fichas[b.dataset.i], primera = sel;
@@ -3285,6 +3397,65 @@ const Megafono = {
     el.querySelector('[data-fin]').hidden = false;
     await UI.clic(el, '[data-ok]');
     UI.cerrar();
+  },
+};
+
+/* =====================================================================
+   16 bis. DICCIONARIO DEL COFRE: las palabras rescatadas, con su oración
+   ===================================================================== */
+const Diccionario = {
+  grupo: 'gemelas',
+  entradas(a) {
+    const res = { gemelas: [], espejo: [], oraciones: [] };
+    (a.rescatadas ?? []).forEach((id) => {
+      const b = Preguntas.buscar(id);
+      if (!b) return;
+      const it = b.item;
+      if (b.tipo === 'sinonimo') res.gemelas.push({ titulo: `${it.palabra} = ${it.correcta}`, detalle: it.ejemplo, voz: `${it.palabra} y ${it.correcta} son palabras gemelas: significan lo mismo. ${it.ejemplo ?? ''}` });
+      if (b.tipo === 'antonimo') res.espejo.push({ titulo: `${it.palabra} ↔ ${it.correcta}`, detalle: it.ejemplo, voz: `${it.palabra} y ${it.correcta} son palabras espejo: significan lo contrario. ${it.ejemplo ?? ''}` });
+      if (b.tipo === 'oracion') { const o = String(it.texto).replace('___', it.correcta); res.oraciones.push({ titulo: it.correcta, detalle: o, voz: o }); }
+    });
+    Object.values(res).forEach((l) => l.sort((x, y) => x.titulo.localeCompare(y.titulo, 'es')));
+    return res;
+  },
+  async abrir() {
+    const a = Juego.alumno;
+    if (!a) return;
+    const pausaba = Motor.pausado;
+    Motor.pausar(true);
+    const e = this.entradas(a);
+    const total = e.gemelas.length + e.espejo.length + e.oraciones.length;
+    const m = html(`<div class="pantalla" style="z-index:45"><div class="caja tarjeta diccionario" role="dialog" aria-label="Mi diccionario de palabras">
+      <h2>📖 Mi diccionario</h2>
+      <p style="margin:0">Rescataste ${total} ${total === 1 ? 'palabra' : 'palabras'}. Toca 🔊 para escucharlas.</p>
+      <div class="pestanas-dicc">
+        <button class="chip" data-g="gemelas">${ICONO_GEMELAS.replace('<svg ', '<svg style="width:30px;height:20px;vertical-align:middle" ')} Gemelas · ${e.gemelas.length}</button>
+        <button class="chip" data-g="espejo">${ICONO_ESPEJO.replace('<svg ', '<svg style="width:30px;height:20px;vertical-align:middle" ')} Espejo · ${e.espejo.length}</button>
+        <button class="chip" data-g="oraciones">Oraciones · ${e.oraciones.length}</button>
+      </div>
+      <ul></ul>
+      <div class="fila-botones"><button class="boton-grande principal" data-cerrar>Cerrar ✕</button></div>
+    </div></div>`);
+    const lista = m.querySelector('ul');
+    const pintar = () => {
+      m.querySelectorAll('[data-g]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.g === this.grupo));
+      const items = e[this.grupo];
+      lista.innerHTML = items.length
+        ? items.map((x, i) => `<li><div><b>${esc(x.titulo)}</b>${x.detalle ? `<span>${esc(x.detalle)}</span>` : ''}</div><button data-oir="${i}" aria-label="Escuchar ${esc(x.titulo)}">${ICONO_SONIDO(true)}</button></li>`).join('')
+        : '<li class="vacio" style="display:block">Todavía no rescatas palabras de este tipo. ¡Sigue jugando!</li>';
+    };
+    pintar();
+    $('#app').appendChild(m);
+    await new Promise((res) => m.addEventListener('click', (ev) => {
+      const b = ev.target.closest('button');
+      if (!b) return;
+      if (b.dataset.g) { Sonido.efecto('click'); this.grupo = b.dataset.g; pintar(); }
+      if (b.dataset.oir !== undefined) Voz.decir(e[this.grupo][Number(b.dataset.oir)].voz, PERSONAJES.robi.voz);
+      if (b.matches('[data-cerrar]')) { Sonido.efecto('click'); res(); }
+    }));
+    Voz.callar();
+    m.remove();
+    Motor.pausar(pausaba);
   },
 };
 
@@ -3387,12 +3558,14 @@ const Menu = {
         <p>Eres Chaski Estelar. Tienes ${estrellasTotales(a)} estrellas y ${a.palabras.length} palabras rescatadas.</p>
         <div class="fila-botones" style="flex-direction:column;align-items:center">
           <button class="boton-grande principal" data-r="practica">Práctica libre ▶</button>
+          <button class="boton" data-r="diccionario">📖 Mi diccionario</button>
           <button class="boton" data-r="diploma">Ver mi diploma</button>
           <button class="boton" data-r="salir">Salir al inicio</button>
         </div></div>`);
       const b = await UI.clic(el, '[data-r]');
       if (b.dataset.r === 'practica') await this.practica();
       if (b.dataset.r === 'diploma') await Diploma.mostrar(a);
+      if (b.dataset.r === 'diccionario') await Diccionario.abrir();
       if (b.dataset.r === 'salir') { UI.cerrar(); return; }
     }
   },
@@ -3661,7 +3834,7 @@ const Docente = {
       if (b.dataset.acc === 'guardar') this.guardarBanco();
       if (b.dataset.acc === 'exportar') { descargar(`banco-mision-palabra-${sufijoFecha()}.json`, JSON.stringify(BANCO, null, 1), 'application/json'); this.avisar('ok', 'Banco exportado (se exporta la última versión guardada).'); }
       if (b.dataset.acc === 'importar') archivo.click();
-      if (b.dataset.acc === 'restaurar' && await UI.confirmar('¿Volver al banco original de 40 gemelas, 40 espejos y 20 oraciones? Se perderán tus cambios.', { si: 'Restaurar' })) {
+      if (b.dataset.acc === 'restaurar' && await UI.confirmar('¿Volver al banco original de 40 gemelas, 40 espejos y 40 oraciones? Se perderán tus cambios.', { si: 'Restaurar' })) {
         this.borrador = clonar(BANCO_ORIGINAL);
         this.guardarBanco('Se restauró el banco original.');
       }
@@ -3841,6 +4014,7 @@ function eventosGlobales() {
   $('#btnEscaner').addEventListener('click', () => Juego.usarEscaner?.());
   $('#btnReparar').addEventListener('click', () => Juego.repararDesdeHud());
   $('#btnMenu').addEventListener('click', () => Menu.pausa());
+  $('#cofre').addEventListener('click', () => { if (!Motor.bloqueado && !Dialogo.activo) Diccionario.abrir(); });
   $('#btnDocente').addEventListener('click', () => Docente.abrir());
   ['#btnSonidoHud', '#btnSonidoIni'].forEach((s) => $(s).addEventListener('click', () => {
     AJUSTES.sonido = !AJUSTES.sonido;
@@ -3881,7 +4055,7 @@ try {
   Motor.iniciar();
   HUD.sonido();
   eventosGlobales();
-  if (DEBUG) window.MP = { Juego, Motor, Voz, Alumnos, Docente, Preguntas, Diploma, Reparar, generarCSV, filasSalon, banco: () => BANCO, ajustes: () => AJUSTES };
+  if (DEBUG) window.MP = { Juego, Motor, Voz, Diccionario, Alumnos, Docente, Preguntas, Diploma, Reparar, generarCSV, filasSalon, banco: () => BANCO, ajustes: () => AJUSTES };
   arrancar();
 } catch (e) {
   UI.pantalla(`<div class="caja tarjeta"><h2>No se pudo iniciar el juego</h2><p>Este equipo no puede mostrar gráficos 3D o el navegador es muy antiguo. Prueba con Chrome actualizado.</p></div>`);

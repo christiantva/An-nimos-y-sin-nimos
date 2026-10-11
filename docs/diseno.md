@@ -166,7 +166,7 @@ Reglas: misma categoría gramatical en todas las opciones; ningún distractor es
 | 39 | 3 | generoso | egoísta | amable, alegre, bondadoso |
 | 40 | 3 | ordenado | desordenado | limpio, arreglado, tranquilo |
 
-### 3.3 Oraciones para completar — 20
+### 3.3 Oraciones para completar — 40 (las 20 de esta tabla + o21-o40 en `index.html`)
 
 Cada oración tiene una pista que deja **una sola** respuesta posible.
 
@@ -309,6 +309,7 @@ node tests/banco.mjs                 # revisa que cada reactivo tenga una sola r
 node tests/juego.mjs tactil          # partida completa con pantalla táctil (1280×800)
 node tests/juego.mjs mouse           # partida completa con mouse (1366×768)
 node tests/docente.mjs mouse         # panel docente: clave, CSV, importar/exportar, banco, ajustes, reinicio
+node tests/variedad.mjs              # cuánto se parecen las preguntas de 30 alumnos
 node tests/voz.mjs                   # voz: frases en trozos, cola sin cortes, recuperación si el motor se cuelga
 node tests/muestra.mjs               # página de muestra de personajes
 node tests/hoja-retratos.mjs         # hoja con todas las expresiones
@@ -327,3 +328,17 @@ Requiere Playwright (`npm i -D playwright`). Las pruebas abren `index.html?debug
 | Táctil y mouse | Partida completa y panel docente probados con toques (tablet) y con clics (laptop) |
 | Sin errores en consola | 0 errores y 0 avisos del juego en todas las pruebas (se ignoran solo los avisos del WebGL por software del contenedor de pruebas) |
 | Partida completa de principio a fin | Prólogo → 5 planetas con jefes → 4 estaciones → final → diploma, incluyendo errores a propósito, escáner, energía en cero y recarga |
+
+---
+
+## 6. Mejoras posteriores
+
+- **Escuchar cada palabra**: mantener presionado un meteorito, portal o ficha la lee sin elegirla. Tocar la tarjeta de la pregunta la vuelve a leer.
+- **Diccionario del cofre**: el cofre del HUD (y los menús de estación y de misión cumplida) abre las palabras rescatadas por tipo, con su oración y botón 🔊.
+- **Más premios**: 5 estelas para la nave (por estrellas: 0, 3, 6, 9, 12) y 4 accesorios para ROBI (flor, chullo, bufanda y lentes, desde las estaciones 1 a 4).
+- **Preguntas distintas para cada alumno** (para evitar que se copien):
+  - cada alumno recibe primero los reactivos que menos ha visto;
+  - las gemelas se preguntan en los dos sentidos (alegre → contento o contento → alegre);
+  - los pares del Planeta Mezcla salen en orden al azar;
+  - el banco de oraciones pasó de 20 a 40.
+  - Resultado con 30 alumnos simulados: misma pregunta al mismo tiempo entre dos alumnos ≈ 2-8 %, y con la respuesta en el mismo lugar ≈ 1-3 %.

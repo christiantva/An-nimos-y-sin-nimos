@@ -93,9 +93,35 @@ for (let k = 0; k < 200 && !(await p.locator('#objetivo:not([hidden])').count())
 }
 await esperarHabla(4000);
 h = await habla();
-const ultima = h.filter((x) => x.t.includes('Toca el meteorito'));
+const ultima = h.filter((x) => x.t.includes('Mantén el dedo'));
 res.juegoUltimaLinea = ultima.some((x) => x.ev === 'fin') && !ultima.some((x) => x.ev === 'cortada');
 res.juegoLeePregunta = h.some((x) => x.ev === 'fin' && x.t.includes('palabra gemela de'));
+
+// 6. Mantener presionada una palabra la lee y NO la elige
+await p.waitForSelector('.etiqueta[data-ok]:not(.apagada)');
+await p.waitForTimeout(600);
+const antes = await p.evaluate(() => ({ e: window.MP.Juego.alumno.energia, i: window.MP.Juego.prog.i }));
+await limpiar();
+const etiqueta = p.locator('.etiqueta[data-ok="0"]:not(.apagada)').first();
+const texto = (await etiqueta.textContent()).trim();
+const caja = await etiqueta.boundingBox();
+await p.mouse.move(caja.x + caja.width / 2, caja.y + caja.height / 2);
+await p.mouse.down();
+await p.waitForTimeout(800);
+await p.mouse.up();
+await p.waitForTimeout(1500);
+h = await habla();
+const despues = await p.evaluate(() => ({ e: window.MP.Juego.alumno.energia, i: window.MP.Juego.prog.i }));
+res.mantenerLee = h.some((x) => x.t === texto);
+res.mantenerNoElige = antes.e === despues.e && antes.i === despues.i && !(await p.locator('#vn:not(.oculta)').isVisible());
+
+// 7. El cofre abre el diccionario y pausa el juego
+await p.locator('#cofre').tap();
+res.diccionarioAbre = await p.locator('.diccionario').isVisible();
+res.diccionarioPausa = await p.evaluate(() => window.MP.Motor.pausado);
+await p.screenshot({ path: new URL('./capturas/voz-diccionario.png', import.meta.url).pathname });
+await p.locator('.diccionario [data-cerrar]').tap();
+res.diccionarioCierra = !(await p.locator('.diccionario').count()) && !(await p.evaluate(() => window.MP.Motor.pausado));
 
 await navegador.close();
 const fallidas = Object.entries(res).filter(([, v]) => !v).map(([k]) => k);

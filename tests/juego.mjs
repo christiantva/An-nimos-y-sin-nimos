@@ -78,7 +78,8 @@ while (pasos++ < 6000 && Date.now() - t0 < 25 * 60000) {
   if (await visible('.pausa')) { await foto('13-pausa-activa'); await p.waitForSelector('[data-sig]:not([disabled])', { timeout: 20000 }); await tocar('[data-sig]'); continue; }
   if (await visible('[data-continuar]')) {
     await foto(`14-recompensas`);
-    if (!(await p.evaluate(() => window.MP.Juego.alumno.nave.calcomanias.length))) { await tocar('[data-calco="estrella"]'); await tocar('[data-color="#7cc8ff"]'); await foto('15-personalizada'); }
+    if (!(await p.evaluate(() => window.MP.Juego.alumno.nave.calcomanias.length))) { await tocar('[data-calco="estrella"]'); await tocar('[data-color="#7cc8ff"]'); await tocar('[data-acc="flor"]'); await foto('15-personalizada'); }
+    if (await p.locator('[data-estela="hielo"]:not([disabled])').count() && (await p.evaluate(() => window.MP.Juego.alumno.nave.estela)) === 'fuego') { await tocar('[data-estela="hielo"]'); await tocar('[data-acc="bufanda"]:not([disabled])'); await foto('15b-estela-bufanda'); }
     await tocar('[data-continuar]');
     continue;
   }
@@ -87,6 +88,7 @@ while (pasos++ < 6000 && Date.now() - t0 < 25 * 60000) {
   await p.waitForTimeout(50);
 }
 const final = await estado();
+const extras = await p.evaluate(() => ({ estela: window.MP.Juego.alumno?.nave?.estela, accesorio: window.MP.Juego.alumno?.robiAccesorio, rescatadas: window.MP.Juego.alumno?.rescatadas?.length }));
 const minutos = ((Date.now() - t0) / 60000).toFixed(1);
 await foto('17-mision-cumplida');
 
@@ -113,6 +115,6 @@ await tocar('[data-tab="ajustes"]');
 await foto('20-docente-ajustes');
 
 await navegador.close();
-const resumen = { modo, minutos, final, errAPropósito, escanerUsado, recargado, reparoVisto, claveMala, csvOk, primeraLineaCSV: csv.split('\r\n')[0].slice(1, 120), filaAlumno: csv.split('\r\n')[1]?.slice(0, 200), errores };
+const resumen = { modo, minutos, final, extras, errAPropósito, escanerUsado, recargado, reparoVisto, claveMala, csvOk, primeraLineaCSV: csv.split('\r\n')[0].slice(1, 120), filaAlumno: csv.split('\r\n')[1]?.slice(0, 200), errores };
 console.log(JSON.stringify(resumen, null, 2));
 process.exit(!final?.terminado || !csvOk || !reparoVisto || errores.length ? 1 : 0);
