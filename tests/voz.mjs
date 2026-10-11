@@ -83,8 +83,7 @@ await p.evaluate(() => localStorage.clear());
 await p.reload({ waitUntil: 'networkidle' });
 await p.fill('#inNombre', 'Voz');
 await p.locator('.form-nombre button').tap();
-await p.locator('[data-av="0"]').tap();
-await p.locator('[data-ok]').tap();
+await p.locator('.creador [data-ok]').tap();
 for (let k = 0; k < 200 && !(await p.locator('#objetivo:not([hidden])').count()); k++) {
   if (await p.locator('#vn:not(.oculta)').isVisible()) {
     if (await p.locator('#vnOpciones button').count()) await p.locator('#vnOpciones button').first().tap({ force: true });

@@ -15,7 +15,7 @@ Estado: **fases 0 a 9 completas**: el juego entero está en `index.html` y pasó
 | Equipos | Tablets Android y laptops Windows con Chrome |
 | Duración | **Una sola sesión** de 35-40 min |
 | Estilo | Combinado: diálogos tipo novela visual en tonos pastel + espacio 3D con colores saturados |
-| Rostros | SVG dentro del código, por capas, con expresiones |
+| Rostros | SVG dentro del código, por capas, con expresiones. El cadete lo crea cada alumno (sin género asignado) |
 | Tipografía | Andika (Google Fonts) |
 | Nombre | El alumno escribe su nombre; los nombres usados en el equipo aparecen como botones para continuar |
 | Voz | Diálogos leídos automáticamente + botón para repetir |
@@ -312,7 +312,8 @@ node tests/docente.mjs mouse         # panel docente: clave, CSV, importar/expor
 node tests/variedad.mjs              # cuánto se parecen las preguntas de 30 alumnos
 node tests/voz.mjs                   # voz: frases en trozos, cola sin cortes, recuperación si el motor se cuelga
 node tests/muestra.mjs               # página de muestra de personajes
-node tests/hoja-retratos.mjs         # hoja con todas las expresiones
+node tests/hoja-retratos.mjs         # hoja con todas las expresiones (usa muestra.html)
+node tests/hoja-cadetes.mjs          # capturas del creador de cadete
 ```
 Requiere Playwright (`npm i -D playwright`). Las pruebas abren `index.html?debug&rapido`: `debug` marca las respuestas correctas para el robot de pruebas y `rapido` acorta animaciones y la pausa activa. Si el equipo no llega a jsDelivr, las pruebas sirven Three.js 0.160.0 desde `tests/vendor/three` (copia de npm, no se sube al repositorio).
 
@@ -342,3 +343,4 @@ Requiere Playwright (`npm i -D playwright`). Las pruebas abren `index.html?debug
   - los pares del Planeta Mezcla salen en orden al azar;
   - el banco de oraciones pasó de 20 a 40.
   - Resultado con 30 alumnos simulados: misma pregunta al mismo tiempo entre dos alumnos ≈ 2-8 %, y con la respuesta en el mismo lugar ≈ 1-3 %.
+- **Creador de cadete** (reemplaza las 6 caras prediseñadas): cada alumno arma su cara en tres pestañas: *Pelo* (10 peinados y 6 colores), *Cara* (6 tonos de piel, ojos sencillos o con pestañas, cejas finas o gruesas) y *Detalles* (rubor, lentes, pecas, vincha y color del traje), con botón «Al azar». Se puede cambiar después desde las recompensas o desde la pantalla de misión cumplida. Las partidas guardadas con el avatar antiguo (número) se siguen viendo igual.

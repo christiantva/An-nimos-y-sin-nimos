@@ -325,6 +325,18 @@
   .diccionario li button { width: 54px; height: 54px; border-radius: 50%; border: 3px solid var(--ciruela); background: #ffd6e0; display: grid; place-items: center; }
   .diccionario li button svg { width: 28px; height: 28px; }
   .diccionario .vacio { text-align: center; font-size: 19px; color: var(--ciruela-suave); padding: 20px; }
+  .creador-grid { display: grid; grid-template-columns: minmax(170px, 250px) 1fr; gap: 18px; text-align: left; align-items: start; }
+  .creador .vista { display: grid; gap: 10px; justify-items: center; }
+  .creador .vista .foto { width: 100%; aspect-ratio: 1; border: 4px solid #ff8a3d; outline: 3px solid var(--ciruela); border-radius: 18px; overflow: hidden; }
+  .creador .vista .foto svg { width: 100%; height: 100%; display: block; }
+  .pestanas-creador { display: flex; gap: 8px; margin-bottom: 4px; }
+  .pestanas-creador .chip { min-height: 48px; padding: 4px 22px; font-size: 18px; }
+  .creador .opciones { max-height: min(56vh, 520px); overflow: auto; padding: 0 6px 6px 0; display: grid; gap: 6px; }
+  .creador .opciones h3 { margin: 6px 0 0; font-size: 19px; }
+  .muestras.grandes button { width: 82px; height: 100px; padding: 0; overflow: hidden; display: grid; grid-template-rows: 1fr auto; place-items: stretch; }
+  .muestras.grandes button svg { width: 100%; height: 100%; }
+  .muestras.grandes button small { font-size: 12px; font-weight: 700; padding: 1px 2px 3px; background: #fff; line-height: 1.1; }
+  @media (max-width: 760px) { .creador-grid { grid-template-columns: 1fr; } .creador .vista .foto { width: 150px; } }
   .practica { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 12px 0; }
   .practica button { min-height: 110px; padding: 10px; border: 3px solid var(--ciruela); border-radius: 18px; background: #fff; font-weight: 700; font-size: 19px; display: grid; justify-items: center; gap: 4px; }
   .practica button i { width: 46px; height: 46px; border-radius: 50%; border: 3px solid var(--ciruela); }
@@ -853,8 +865,8 @@ function ojo(cx, cy, e, lado, o = {}) {
   if (parpado) { const y = -ry * .05; a = [-rx - 1.5, y]; c = [0, y - 4]; b = [rx + 1.5, y]; }
   else if (e === 'triste') { a = [lado * (rx + 1.5), 1]; c = [0, -ry - 6]; b = [-lado * (rx + 1.5), -5]; }
   else { a = [-rx - 1.5, -1]; c = [0, -ry - 7]; b = [rx + 1.5, -2]; }
-  r += `<path d="M${X(a[0])} ${Y(a[1])} Q${X(c[0])} ${Y(c[1])} ${X(b[0])} ${Y(b[1])}" fill="none" stroke="${L}" stroke-width="${W(4)}" stroke-linecap="round"/>`;
-  if (!parpado) {
+  r += `<path d="M${X(a[0])} ${Y(a[1])} Q${X(c[0])} ${Y(c[1])} ${X(b[0])} ${Y(b[1])}" fill="none" stroke="${L}" stroke-width="${W(o.pestanas === false ? 2.6 : 4)}" stroke-linecap="round"/>`;
+  if (!parpado && o.pestanas !== false) {
     const ox = lado * (rx + 1);
     r += `<path d="M${X(ox)} ${Y(e === 'triste' ? 1 : -2)} l${W(lado * 4)} ${W(-4)}" stroke="${L}" stroke-width="${W(3)}" stroke-linecap="round"/>`;
   }
@@ -916,7 +928,7 @@ function mejillas(lx, rx, y, o = {}) {
 // Ojos, cejas, mejillas y boca en un solo paso.
 function rostro(g, e, o = {}) {
   const ex = (e === 'normal' && o.base) ? o.base : e;
-  const eo = { s: o.s, iris: o.iris, piel: o.piel, linea: o.lineaOjo, blanco: o.blanco };
+  const eo = { s: o.s, iris: o.iris, piel: o.piel, linea: o.lineaOjo, blanco: o.blanco, pestanas: o.pestanas };
   return (o.sinMejillas ? '' : mejillas(g.ex1 - 4, g.ex2 + 4, g.mejY, o.mej))
     + ojo(g.ex1, g.ey, ex, -1, eo) + ojo(g.ex2, g.ey, ex, 1, eo)
     + ceja(g.ex1, g.cy, ex, -1, o.ceja) + ceja(g.ex2, g.cy, ex, 1, o.ceja)
@@ -997,13 +1009,21 @@ const PELO = {
   coletas: (c) => [[44, 38], [156, 162]].map(([x, xh]) =>
     `<ellipse cx="${xh}" cy="132" rx="11" ry="22" fill="${c}" ${T()}/><circle cx="${x}" cy="100" r="17" fill="${c}" ${T()}/>`).join(''),
   cola: (c) => `<ellipse cx="152" cy="74" rx="16" ry="34" transform="rotate(35 152 74)" fill="${c}" ${T()}/><circle cx="140" cy="58" r="6" fill="#ffd23f" ${T(1.8)}/>`,
+  erizo: (c) => `<path d="M54 102 Q50 58 62 52 L58 34 L76 46 L80 26 L94 42 L100 22 L108 42 L120 26 L124 46 L142 34 L138 52 Q150 58 146 102 Q140 76 124 72 Q100 80 76 72 Q60 76 54 102 Z" fill="${c}" ${T()}/>`,
+  rapado: (c) => `<path d="M56 98 Q54 54 100 52 Q146 54 144 98 Q140 70 100 66 Q60 70 56 98 Z" fill="${c}" ${T()}/>`,
+  melenaAtras: (c) => `<path d="M46 102 Q40 150 52 158 L148 158 Q160 150 154 102 Q154 42 100 42 Q46 42 46 102 Z" fill="${c}" ${T()}/>`,
+  melena: (c) => `<path d="M54 106 Q50 46 100 44 Q150 46 146 106 Q146 86 140 82 L60 82 Q54 86 54 106 Z" fill="${c}" ${T()}/>`,
+  gorra: (color) => `<path d="M52 94 Q50 38 100 36 Q150 38 148 94 Z" fill="${color}" ${T()}/>`
+    + `<path d="M48 92 Q100 76 152 92 Q160 102 150 106 Q100 92 50 106 Q40 102 48 92 Z" fill="${color}" ${T()}/>`
+    + `<path d="M100 38 L100 92" stroke="${LINEA}" stroke-width="1.5" opacity=".4"/><circle cx="100" cy="36" r="5" fill="${color}" ${T(2)}/>`
+    + `<path d="${estrella(118, 64, 8)}" fill="#fff" ${T(1.5)}/>`,
   asoma: (c) => `<path d="M58 88 L64 100 L72 90 L80 98 L90 90 L100 97 L110 90 L120 98 L128 90 L136 100 L142 88 Z" fill="${c}" ${T(2)}/>`,
 };
 
 /* ---------- Ropa ---------- */
 const HOMBROS = 'M26 200 Q30 168 72 162 L128 162 Q170 168 174 200 Z';
 const ROPA = {
-  traje: () => `<path d="${HOMBROS}" fill="#f4f6fb" ${T()}/>`
+  traje: (color = '#f4f6fb') => `<path d="${HOMBROS}" fill="${color}" ${T()}/>`
     + `<path d="M76 162 Q100 186 124 162 L130 163 Q100 196 70 163 Z" fill="#ff8a3d" ${T(2)}/>`
     + `<circle cx="142" cy="186" r="9" fill="#4aa3df" ${T(2)}/><path d="${estrella(142, 186, 6)}" fill="#fff"/>`,
   killa: () => `<path d="${HOMBROS}" fill="#6b4fa0" ${T()}/>`
@@ -1031,7 +1051,7 @@ function humano(p, e) {
     <path d="M100 124 q3 4 -1 6" fill="none" stroke="${LINEA}" stroke-width="2" stroke-linecap="round" opacity=".55"/>
     ${p.frente ? p.frente() : ''}
     ${rostro({ ex1: 80, ex2: 120, ey: 112, cy: 93, my: 142, mejY: 130 }, e,
-      { s: p.s ?? 1, iris: p.iris, piel, ceja: { color: p.ceja ?? LINEA, grosor: p.grosorCeja ?? 3.6 } })}
+      { s: p.s ?? 1, iris: p.iris, piel, pestanas: p.pestanas, sinMejillas: p.rubor === false, ceja: { color: p.ceja ?? LINEA, grosor: p.grosorCeja ?? 3.6 } })}
     ${p.extra ? p.extra() : ''}`);
 }
 
@@ -1091,17 +1111,54 @@ const AVATARES = [
   { piel: '#b8794f', pelo: '#241615', iris: '#3a2416', estilo: 'chullo' },
   { piel: '#6e4630', pelo: '#120c0c', iris: '#2a1810', estilo: 'lacio' },
 ];
-function cadete(i, e) {
-  const a = AVATARES[i % AVATARES.length], c = a.pelo;
+// Opciones del creador de cadete. El alumno arma su cara: el juego no asigna género.
+const AVATAR_BASE = { piel: '#e3ac80', peinado: 'corto', colorPelo: '#2b1a12', ojos: 'simples', cejas: 'finas', rubor: false, traje: '#f4f6fb', extra: 'ninguno' };
+const CREADOR = {
+  piel: ['#f3cfa8', '#e3ac80', '#d49a6a', '#b8794f', '#8d5a3b', '#6e4630'],
+  peinado: [['corto', 'Corto'], ['erizo', 'Parado'], ['rapado', 'Muy corto'], ['rizado', 'Rizado'], ['melena', 'Melena'], ['lacio', 'Largo'], ['cola', 'Cola'], ['trenzas', 'Trenzas'], ['chullo', 'Chullo'], ['gorra', 'Gorra']],
+  colorPelo: ['#120c0c', '#2b1a12', '#4a2c1a', '#6b4226', '#a0662f', '#c98a3f'],
+  ojos: [['simples', 'Ojos sencillos'], ['pestanas', 'Con pestañas']],
+  cejas: [['finas', 'Cejas finas'], ['gruesas', 'Cejas gruesas']],
+  rubor: [[false, 'Sin rubor'], [true, 'Con rubor']],
+  traje: ['#f4f6fb', '#7cc8ff', '#7fdca2', '#ffd23f', '#b48cff', '#ff9fb8'],
+  extra: [['ninguno', 'Nada'], ['lentes', 'Lentes'], ['pecas', 'Pecas'], ['cintillo', 'Vincha']],
+};
+// Acepta el formato antiguo (número de avatar prediseñado) y el nuevo (objeto del creador).
+function normalizarAvatar(av) {
+  if (av && typeof av === 'object') return { ...AVATAR_BASE, ...av };
+  const p = AVATARES[(Number(av) || 0) % AVATARES.length];
+  return { ...AVATAR_BASE, piel: p.piel, peinado: p.estilo, colorPelo: p.pelo, ojos: 'pestanas', rubor: true };
+}
+function avatarAlAzar() {
+  const uno = (l) => l[Math.floor(Math.random() * l.length)];
+  const v = (l) => (Array.isArray(uno(l)) ? uno(l)[0] : uno(l));
+  return { piel: uno(CREADOR.piel), peinado: v(CREADOR.peinado), colorPelo: uno(CREADOR.colorPelo), ojos: v(CREADOR.ojos), cejas: v(CREADOR.cejas), rubor: v(CREADOR.rubor), traje: uno(CREADOR.traje), extra: v(CREADOR.extra) };
+}
+function cadete(av, e) {
+  const a = normalizarAvatar(av), c = a.colorPelo;
   const estilos = {
     corto: { atras: () => PELO.gorro(c), frente: () => PELO.flequillo(c) + PELO.remolino(c) },
-    trenzas: { atras: () => PELO.gorro(c), frente: () => PELO.partido(c) + PELO.trenzas(c) },
+    erizo: { atras: () => PELO.gorro(c), frente: () => PELO.erizo(c) },
+    rapado: { atras: () => '', frente: () => PELO.rapado(c) },
     rizado: { atras: () => PELO.rizos(c, true), frente: () => PELO.rizos(c) },
-    cola: { atras: () => PELO.cola(c) + PELO.gorro(c), frente: () => PELO.flequillo(c) },
-    chullo: { atras: () => PELO.gorro(c), frente: () => PELO.asoma(c) + chullo(50, 150, 30, 88) },
+    melena: { atras: () => PELO.melenaAtras(c), frente: () => PELO.melena(c) },
     lacio: { atras: () => PELO.largo(c, 176), frente: () => PELO.partido(c) },
+    cola: { atras: () => PELO.cola(c) + PELO.gorro(c), frente: () => PELO.flequillo(c) },
+    trenzas: { atras: () => PELO.gorro(c), frente: () => PELO.partido(c) + PELO.trenzas(c) },
+    chullo: { atras: () => PELO.gorro(c), frente: () => PELO.asoma(c) + chullo(50, 150, 30, 88) },
+    gorra: { atras: () => PELO.gorro(c), frente: () => PELO.asoma(c) + PELO.gorra('#4aa3df') },
   };
-  return humano({ fondo: '#ffe6d3', piel: a.piel, iris: a.iris, ropa: ROPA.traje, ...estilos[a.estilo] }, e);
+  const extra = () => {
+    if (a.extra === 'lentes') return `<circle cx="80" cy="112" r="15" fill="#fff" fill-opacity=".15" ${T(3)}/><circle cx="120" cy="112" r="15" fill="#fff" fill-opacity=".15" ${T(3)}/><path d="M95 110 Q100 106 105 110" fill="none" ${T(3)}/><path d="M65 108 L57 104 M135 108 L143 104" ${T(3)} stroke-linecap="round"/>`;
+    if (a.extra === 'pecas') return [[68, 128], [74, 133], [64, 134], [132, 128], [126, 133], [136, 134]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.8" fill="#8a4b2a" opacity=".7"/>`).join('');
+    if (a.extra === 'cintillo') return `<path d="M55 86 Q100 50 145 86" fill="none" stroke="${LINEA}" stroke-width="10" stroke-linecap="round"/><path d="M55 86 Q100 50 145 86" fill="none" stroke="#ff6b8b" stroke-width="6" stroke-linecap="round"/>`;
+    return '';
+  };
+  return humano({
+    fondo: '#ffe6d3', piel: a.piel, iris: '#3b2414', ropa: () => ROPA.traje(a.traje),
+    pestanas: a.ojos === 'pestanas', grosorCeja: a.cejas === 'gruesas' ? 5.4 : 3.4, rubor: a.rubor, extra,
+    ...(estilos[a.peinado] ?? estilos.corto),
+  }, e);
 }
 
 /* ---------- Personajes no humanos ---------- */
@@ -3248,9 +3305,10 @@ const Recompensas = {
     this.sonado = false;
     for (;;) {
       const el = this.pintar(n);
-      const b = await UI.clic(el, '[data-continuar], [data-reto], [data-dicc]');
+      const b = await UI.clic(el, '[data-continuar], [data-reto], [data-dicc], [data-cadete]');
       if (b.matches('[data-continuar]')) break;
       if (b.matches('[data-dicc]')) await Diccionario.abrir();
+      else if (b.matches('[data-cadete]')) await Menu.editarCadete();
       else await Reparar.jugar('reto');
     }
   },
@@ -3275,6 +3333,7 @@ const Recompensas = {
       </div>
       <div class="fila-botones">
         <button class="boton" data-dicc>📖 Mi diccionario</button>
+        <button class="boton" data-cadete>🧑‍🚀 Mi cadete</button>
         <button class="boton" data-reto>🔧 Reto: reparar la nave</button>
         <button class="boton-grande principal" data-continuar>Continuar misión ▶</button>
       </div>
@@ -3484,7 +3543,7 @@ const Menu = {
       </form>
       <p class="ayuda">Escribe tu nombre y la primera letra de tu apellido. Ejemplo: María T.</p>
       ${lista.length ? `<p style="margin:10px 0 0;font-weight:700">¿Ya jugaste antes? Toca tu nombre:</p>
-      <div class="lista-alumnos">${lista.map((a) => `<button data-clave="${esc(a.clave)}">${cadete(a.avatar ?? 0, 'feliz')}<span>${esc(a.nombre)}<small>${a.terminado ? '¡Misión cumplida!' : `Planeta ${Math.min(5, planetasCompletados(a) + 1)} de 5`} · ${estrellasTotales(a)} ★</small></span></button>`).join('')}</div>
+      <div class="lista-alumnos">${lista.map((a) => `<button data-clave="${esc(a.clave)}">${cadete(a.avatar, 'feliz')}<span>${esc(a.nombre)}<small>${a.terminado ? '¡Misión cumplida!' : `Planeta ${Math.min(5, planetasCompletados(a) + 1)} de 5`} · ${estrellasTotales(a)} ★</small></span></button>`).join('')}</div>
       <div class="fila-botones"><button class="boton" type="button" data-nuevo>+ Nuevo alumno</button></div>` : ''}
     </div>`);
     const input = el.querySelector('#inNombre');
@@ -3510,25 +3569,60 @@ const Menu = {
     this.resolverInicio = null;
     r?.(nombre);
   },
-  async avatar(nombre) {
-    let elegido = null;
-    const el = UI.pantalla(`<div class="caja tarjeta" style="width:min(640px,100%)">
-      <h2>¡Hola, ${esc(nombre)}!</h2>
-      <p>Elige tu cara de cadete.</p>
-      <div class="avatares">${AVATARES.map((_, i) => `<button data-av="${i}" aria-pressed="false" aria-label="Avatar ${i + 1}">${cadete(i, 'feliz')}</button>`).join('')}</div>
-      <div class="fila-botones"><button class="boton-grande principal" data-ok disabled>¡Listo! ▶</button></div>
+  // Creador de cadete: vista previa en vivo y opciones con miniaturas.
+  async crearCadete(nombre, actual) {
+    let av = normalizarAvatar(actual ?? AVATAR_BASE);
+    const el = UI.pantalla(`<div class="caja tarjeta creador" style="width:min(1040px,100%)">
+      <h2>${actual ? 'Cambia tu cadete' : `¡Hola, ${esc(nombre)}! Crea tu cadete`}</h2>
+      <div class="creador-grid">
+        <div class="vista"><div class="foto"></div><button class="boton" data-azar>🎲 Al azar</button></div>
+        <div><div class="pestanas-creador">${[['pelo', 'Pelo'], ['cara', 'Cara'], ['detalles', 'Detalles']].map(([id, t]) => `<button class="chip" data-pest="${id}">${t}</button>`).join('')}</div>
+        <div class="opciones"></div></div>
+      </div>
+      <div class="fila-botones"><button class="boton-grande principal" data-ok>¡Listo! ▶</button></div>
     </div>`);
+    const foto = el.querySelector('.foto'), opciones = el.querySelector('.opciones');
+    const color = (k, titulo, lista) => `<h3>${titulo}</h3><div class="muestras" data-k="${k}">${lista.map((c) => `<button data-v="${c}" aria-label="${titulo} ${c}" aria-pressed="${av[k] === c}" style="background:${c}"></button>`).join('')}</div>`;
+    // En ojos, cejas, mejillas y detalles la miniatura se acerca a la cara para que se note la diferencia.
+    const dibujo = (k, titulo, lista) => `<h3>${titulo}</h3><div class="muestras grandes" data-k="${k}">${lista.map(([v, n]) => {
+      const svg = cadete({ ...av, [k]: v }, 'normal');
+      return `<button data-v="${v}" aria-label="${n}" title="${n}" aria-pressed="${av[k] === v}">${k === 'peinado' ? svg : svg.replace('viewBox="0 0 200 200"', 'viewBox="44 68 112 92"')}<small>${n}</small></button>`;
+    }).join('')}</div>`;
+    let pestana = 'pelo';
+    const pintar = () => {
+      const scroll = opciones.scrollTop;
+      foto.innerHTML = cadete(av, 'feliz');
+      el.querySelectorAll('[data-pest]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.pest === pestana));
+      opciones.innerHTML = {
+        pelo: () => dibujo('peinado', 'Peinado', CREADOR.peinado) + color('colorPelo', 'Color de pelo', CREADOR.colorPelo),
+        cara: () => color('piel', 'Piel', CREADOR.piel) + dibujo('ojos', 'Ojos', CREADOR.ojos) + dibujo('cejas', 'Cejas', CREADOR.cejas),
+        detalles: () => dibujo('rubor', 'Mejillas', CREADOR.rubor) + dibujo('extra', 'Detalle', CREADOR.extra) + color('traje', 'Traje', CREADOR.traje),
+      }[pestana]();
+      opciones.scrollTop = scroll;
+    };
+    pintar();
     el.addEventListener('click', (ev) => {
-      const b = ev.target.closest('[data-av]');
+      const b = ev.target.closest('button');
       if (!b) return;
+      if (b.matches('[data-azar]')) { Sonido.efecto('click'); av = avatarAlAzar(); pintar(); return; }
+      if (b.dataset.pest) { Sonido.efecto('click'); pestana = b.dataset.pest; opciones.scrollTop = 0; pintar(); return; }
+      const grupo = b.closest('[data-k]');
+      if (!grupo) return;
       Sonido.efecto('click');
-      elegido = Number(b.dataset.av);
-      el.querySelectorAll('[data-av]').forEach((x) => x.setAttribute('aria-pressed', x === b));
-      el.querySelector('[data-ok]').disabled = false;
+      const k = grupo.dataset.k;
+      av[k] = k === 'rubor' ? b.dataset.v === 'true' : b.dataset.v;
+      pintar();
     });
     await UI.clic(el, '[data-ok]');
     UI.cerrar();
-    return elegido;
+    return av;
+  },
+  async editarCadete() {
+    const a = Juego.alumno;
+    if (!a) return;
+    a.avatar = await this.crearCadete(a.nombre, a.avatar);
+    Juego.actualizarCtx();
+    Juego.guardar();
   },
   async pausa() {
     if (!Juego.alumno || Motor.bloqueado) return;
@@ -3553,12 +3647,13 @@ const Menu = {
       Motor.modoEstacion();
       Sonido.musica('estacion');
       const el = UI.pantalla(`<div class="caja tarjeta" style="width:min(620px,100%)">
-        <div style="width:130px;margin:0 auto">${cadete(a.avatar ?? 0, 'feliz')}</div>
+        <div style="width:130px;margin:0 auto">${cadete(a.avatar, 'feliz')}</div>
         <h2>¡Misión cumplida, ${esc(a.nombre)}!</h2>
         <p>Eres Chaski Estelar. Tienes ${estrellasTotales(a)} estrellas y ${a.palabras.length} palabras rescatadas.</p>
         <div class="fila-botones" style="flex-direction:column;align-items:center">
           <button class="boton-grande principal" data-r="practica">Práctica libre ▶</button>
           <button class="boton" data-r="diccionario">📖 Mi diccionario</button>
+          <button class="boton" data-r="cadete">🧑‍🚀 Cambiar mi cadete</button>
           <button class="boton" data-r="diploma">Ver mi diploma</button>
           <button class="boton" data-r="salir">Salir al inicio</button>
         </div></div>`);
@@ -3566,6 +3661,7 @@ const Menu = {
       if (b.dataset.r === 'practica') await this.practica();
       if (b.dataset.r === 'diploma') await Diploma.mostrar(a);
       if (b.dataset.r === 'diccionario') await Diccionario.abrir();
+      if (b.dataset.r === 'cadete') await this.editarCadete();
       if (b.dataset.r === 'salir') { UI.cerrar(); return; }
     }
   },
@@ -3972,7 +4068,7 @@ const Diploma = {
     g.font = fuente(34); g.fillText(`${total} de 15 estrellas · ${a.palabras.length} palabras rescatadas · ${a.puntos} puntos`, W / 2, 665);
     const ins = (a.insignias ?? []).map((x) => INSIGNIAS[x]?.nombre).filter(Boolean);
     g.font = fuente(30, 400); g.fillText(ins.length ? `Insignias: ${ins.join(' · ')}` : 'Misión Palabra', W / 2, 720);
-    const [av, rb] = await Promise.all([this.imagen(cadete(a.avatar ?? 0, 'feliz')), this.imagen(robi('feliz', { accesorio: a.robiAccesorio }))]);
+    const [av, rb] = await Promise.all([this.imagen(cadete(a.avatar, 'feliz')), this.imagen(robi('feliz', { accesorio: a.robiAccesorio }))]);
     const marco = (img, x) => { if (!img) return; redondo(x, 760, 230, 230, 24); g.save(); g.clip(); g.drawImage(img, x, 760, 230, 230); g.restore(); redondo(x, 760, 230, 230, 24); g.lineWidth = 6; g.strokeStyle = LINEA; g.stroke(); };
     marco(av, 150); marco(rb, W - 380);
     const fecha = new Date().toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -4040,7 +4136,7 @@ async function arrancar() {
     const nombre = await Menu.inicio();
     let a = Alumnos.obtener(nombre);
     if (!a) {
-      const avatar = await Menu.avatar(nombre);
+      const avatar = await Menu.crearCadete(nombre);
       a = alumnoNuevo(nombre, avatar);
       Alumnos.guardar(a);
     }
